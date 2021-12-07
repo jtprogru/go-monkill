@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/jtprogru/go-monkill/pkg/executor"
 	"github.com/jtprogru/go-monkill/pkg/waiter"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // watchCmd represents the watch command
@@ -16,7 +17,7 @@ var watchCmd = &cobra.Command{
 
 For example:
 
-monkill watch --pid=12345 --command="rm -f /tmp/12345.log"
+go-monkill watch --pid=12345 --command="ping jtprog.ru -c 4""
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		l := zerolog.New(os.Stderr)
@@ -24,21 +25,28 @@ monkill watch --pid=12345 --command="rm -f /tmp/12345.log"
 	},
 }
 
+// WatcherConfig provides config for watcher
 var WatcherConfig struct {
-	pid     int
-	command string
+	pid     int    // Specified PID for process
+	command string // Specified command for running
 }
 
+// Add command watchCmd to rootCmd
+//
+// &WatcherConfig pid as PID for monitoring – defined in flag --pid
+// &WatcherConfig command as command for running - defined in flag --command
 func init() {
 	rootCmd.AddCommand(watchCmd)
 	watchCmd.PersistentFlags().IntVar(&WatcherConfig.pid, "pid", -1, "PID for watching")
 	watchCmd.PersistentFlags().StringVar(&WatcherConfig.command, "command", "ping jtprog.ru -c 2", "Command for running")
 }
 
+// Waiter interface
 type Waiter interface {
 	Wait(pid int) (<-chan struct{}, error)
 }
 
+// Executor interface
 type Executor interface {
 	Exec(command string) error
 }

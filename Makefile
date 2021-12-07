@@ -9,3 +9,5 @@ build:
 run: build
 	./.bin/monkill
 
+install:
+	go mod install .
