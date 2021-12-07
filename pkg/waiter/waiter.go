@@ -2,8 +2,10 @@ package waiter
 
 import "github.com/mitchellh/go-ps"
 
+// Waiter struct
 type Waiter struct{}
 
+// Wait monitor process with defined PID
 func (w Waiter) Wait(pid int) (<-chan struct{}, error) {
 	_, err := ps.FindProcess(pid)
 	if err != nil {

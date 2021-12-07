@@ -7,8 +7,10 @@ import (
 	"strings"
 )
 
+// Executor struct
 type Executor struct{}
 
+// Exec for running Executor with command
 func (e Executor) Exec(command string) error {
 	cmds := strings.Split(command, " ")
 	if len(cmds) == 0 {
