@@ -46,4 +46,6 @@ tags
 # Persistent undo
 [._]*.un~
 
+.idea/
+.bin/
 # End of https://www.toptal.com/developers/gitignore/api/idea,vim,go
