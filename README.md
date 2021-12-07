@@ -6,6 +6,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/jtprogru/go-monkill.svg)](https://github.com/jtprogru/go-monkill/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues-raw/jtprogru/go-monkill)](https://github.com/jtprogru/go-monkill/issues)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/jtprogru/go-monkill)](https://github.com/jtprogru/go-monkill/releases/latest)
+[![Go report](https://goreportcard.com/badge/github.com/jtprogru/go-monkill)](https://goreportcard.com/report/github.com/jtprogru/go-monkill)
 ![GitHub](https://img.shields.io/github/license/jtprogru/go-monkill)
 ![Linux](https://img.shields.io/badge/-Linux-grey?logo=linux)
 [![Donate](https://img.shields.io/badge/-Donate-yellow?logo=paypal)](https://paypal.me/jtprogru)

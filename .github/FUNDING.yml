@@ -1,4 +1,2 @@
 
-github:
-  - jtprogru
-  - t0pep0
+github: [ "jtprogru", "t0pep0" ]

@@ -10,7 +10,7 @@ import (
 // Executor struct
 type Executor struct{}
 
-// Exec for running Executor with command
+// Exec - running Executor with command (i.e.: "ping jtprog.ru -c 4" )
 func (e Executor) Exec(command string) error {
 	cmds := strings.Split(command, " ")
 	if len(cmds) == 0 {

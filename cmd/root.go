@@ -1,12 +1,15 @@
+// Package cmd contains all commands
+
 package cmd
 
 import (
 	"github.com/spf13/cobra"
 )
 
-const Version string = "v0.1.1"
+const Version string = "v1.0.0"
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd – default root command
+// rootCmd show help message
 var rootCmd = &cobra.Command{
 	Use:   "monkill",
 	Short: "Monkill for watching a process will finish or be killed",
