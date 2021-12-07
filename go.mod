@@ -3,6 +3,7 @@ module github.com/jtprogru/go-monkill
 go 1.17
 
 require (
+	github.com/mitchellh/go-ps v1.0.0
 	github.com/rs/zerolog v1.26.0
 	github.com/spf13/cobra v1.2.1
 )
