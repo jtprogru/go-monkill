@@ -12,4 +12,4 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2.4.0
       - name: Ping endpoint
-        run: curl "https://proxy.golang.org/github.com/jtprogru/g-monkill/@v/$(git describe HEAD --tags --abbrev=0).info"
+        run: curl "https://proxy.golang.org/github.com/jtprogru/go-monkill/@v/$(git describe HEAD --tags --abbrev=0).info"
