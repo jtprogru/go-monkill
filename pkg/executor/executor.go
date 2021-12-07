@@ -7,8 +7,11 @@ import (
 	"strings"
 )
 
+//Executor - simple executor shell command
 type Executor struct{}
 
+//Exec - exec shell command
+//Example: Exec("ping -c 4 8.8.8.8")
 func (e Executor) Exec(command string) error {
 	cmds := strings.Split(command, " ")
 	if len(cmds) == 0 {
