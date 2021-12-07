@@ -1,0 +1,18 @@
+name: publish package
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    needs:
+      - autorelease
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2.3.4
+      - name: Ping endpoint
+        run: curl "https://proxy.golang.org/github.com/jidicula/random-standup/@v/$(git describe HEAD --tags --abbrev=0).info"
