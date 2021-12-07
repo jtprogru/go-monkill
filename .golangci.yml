@@ -1,0 +1,6 @@
+run:
+        skip-files:
+                - ".*_test\\.go$"
+                - ".*req_model*.go$"
+                - ".*resp_model*.go$"
+                - "./tools/*"

@@ -1,17 +1,12 @@
 package cmd
 
 import (
-	"errors"
-	"fmt"
+	"github.com/jtprogru/go-monkill/pkg/executor"
+	"github.com/jtprogru/go-monkill/pkg/waiter"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
-	"log"
 	"os"
-	"os/exec"
-	"strings"
 )
-
-var pid int
-var command string
 
 // watchCmd represents the watch command
 var watchCmd = &cobra.Command{
@@ -24,58 +19,42 @@ For example:
 monkill watch --pid=12345 --command="rm -f /tmp/12345.log"
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return watch()
+		l := zerolog.New(os.Stderr)
+		return watcher(WatcherConfig.pid, WatcherConfig.command, waiter.Waiter{}, executor.Executor{}, l)
 	},
+}
+
+var WatcherConfig struct {
+	pid     int
+	command string
 }
 
 func init() {
 	rootCmd.AddCommand(watchCmd)
-	watchCmd.PersistentFlags().IntVar(&pid, "pid", -1, "PID for watching")
-	watchCmd.PersistentFlags().StringVar(&command, "command", "ping jtprog.ru -c 2", "Command for running")
+	watchCmd.PersistentFlags().IntVar(&WatcherConfig.pid, "pid", -1, "PID for watching")
+	watchCmd.PersistentFlags().StringVar(&WatcherConfig.command, "command", "ping jtprog.ru -c 2", "Command for running")
 }
 
-func watch() error {
-	F := true
-	for F {
-		if err := procPIDcmdline(pid); err != nil {
-			fmt.Println(err)
-			return err
-		} else {
-			F = false
-			if err := runNeededCommand(command); err != nil {
-				log.Fatal(err)
-				return err
-			}
-			return nil
-		}
-	}
-	return nil
+type Waiter interface {
+	Wait(pid int) (<-chan struct{}, error)
 }
 
-func procPIDcmdline(p int) error {
-	procCmdline := fmt.Sprintf("/proc/%d/cmdline", p)
-	if _, err := os.Stat(procCmdline); errors.Is(err, os.ErrNotExist) {
-		return errors.New(fmt.Sprintf("Process with PID %d was not found", p))
-	}
-	return nil
+type Executor interface {
+	Exec(command string) error
 }
 
-func runNeededCommand(commnd string) error {
-	cmdd, err := exec.LookPath(strings.Split(commnd, " ")[0])
-	args := strings.Split(commnd, " ")[:]
+func watcher(pid int, command string, w Waiter, e Executor, l zerolog.Logger) error {
+	l.Info().Int("pid", pid).Str("command", command).Msg("Arguments readed")
+	ch, err := w.Wait(pid)
 	if err != nil {
-		log.Fatal("installing fortune is in your future")
+		l.Error().Err(err).Msg("Break execution. Error on watch process")
 		return err
 	}
-	cmd := &exec.Cmd{
-		Path:   cmdd,
-		Args:   args,
-		Stdout: os.Stdout,
-		Stderr: os.Stdout,
-	}
-	fmt.Println(cmd.String())
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("[FATAL] Error: %v\n", err)
+	<-ch
+	l.Info().Int("pid", pid).Msg("Process finished, run command")
+	err = e.Exec(command)
+	if err != nil {
+		l.Error().Err(err).Msg("Break execution. Error on start command")
 		return err
 	}
 	return nil

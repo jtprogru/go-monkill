@@ -1,10 +1,14 @@
+
+# Created by https://www.toptal.com/developers/gitignore/api/idea,vim,go
+# Edit at https://www.toptal.com/developers/gitignore?templates=idea,vim,go
+
+### Go ###
 # Binaries for programs and plugins
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-.bin/
 
 # Test binary, built with `go test -c`
 *.test
@@ -14,3 +18,32 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+### Go Patch ###
+/vendor/
+/Godeps/
+
+#!! ERROR: idea is undefined. Use list command to see defined gitignore types !!#
+
+### Vim ###
+# Swap
+[._]*.s[a-v][a-z]
+!*.svg  # comment out if you don't need vector files
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Session
+Session.vim
+Sessionx.vim
+
+# Temporary
+.netrwhist
+*~
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~
+
+# End of https://www.toptal.com/developers/gitignore/api/idea,vim,go
