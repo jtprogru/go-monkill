@@ -1,7 +1,6 @@
 # go-monkill
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/jtprogru/go-monkill.svg)](https://pkg.go.dev/github.com/jtprogru/go-monkill)
-[![golangci-lint](https://github.com/jtprogru/go-monkill/actions/workflows/lint.yml/badge.svg)](https://github.com/jtprogru/go-monkill/actions/workflows/lint.yml)
 [![build](https://github.com/jtprogru/go-monkill/actions/workflows/build.yml/badge.svg)](https://github.com/jtprogru/go-monkill/actions/workflows/build.yml)
 [![publish](https://github.com/jtprogru/go-monkill/actions/workflows/publish.yml/badge.svg)](https://github.com/jtprogru/go-monkill/actions/workflows/publish.yml)
 [![GitHub stars](https://img.shields.io/github/stars/jtprogru/go-monkill.svg)](https://github.com/jtprogru/go-monkill/stargazers)
