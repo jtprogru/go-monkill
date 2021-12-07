@@ -21,7 +21,7 @@ Example running:
 go-monkill watch --pid=12345 --command="ping jtprog.ru -c 4"
 ```
 
-When process with PID `12345` will stop or killed, `go-monkill` will run command `ping jtprog.ru -c 4`
+When process with PID `12345` will finish or be killed, `go-monkill` will run command `ping jtprog.ru -c 4`
 
 ## Feedback
 
