@@ -6,7 +6,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const Version string = "v1.0.0"
+// Version of release
+const Version string = "v0.2.0"
 
 // rootCmd – default root command
 // rootCmd show help message

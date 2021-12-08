@@ -24,16 +24,18 @@ go-monkill watch --pid 12345 --command "ping jtprog.ru -c 4"
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		l := zerolog.New(os.Stderr)
+		l.Level(zerolog.TraceLevel)
 		return watcher(WatcherConfig.pid, WatcherConfig.command, WatcherConfig.timeout, waiter.Waiter{}, executor.Executor{}, l)
 	},
 }
 
 // Verbose flag
 //var Verbose bool
-// defaultPid
+
+// defaultPid is -1 for
 var defaultPid int = -1
 
-// defaultTimeOut
+// defaultTimeOut is 250 milliseconds
 var defaultTimeOut int64 = 250
 
 // WatcherConfig provides config for watcher
@@ -47,16 +49,19 @@ var WatcherConfig struct {
 //
 // &WatcherConfig pid as PID for monitoring – defined in flag --pid
 // &WatcherConfig command as command for running - defined in flag --command
+// &WatcherConfig timeout as timeout for check process - defined in flag --timeout
 func init() {
 	rootCmd.AddCommand(watchCmd)
-	// TODO: Implement verbose log output by flag
-	//rootCmd.InheritedFlags().BoolVar(&Verbose, "verbose", false, "Enable debug logging")
+	// TODO: Implement verbose log output by flag --verbose
+	// rootCmd.InheritedFlags().BoolVar(&Verbose, "verbose", false, "Enable debug logging")
+	// TODO: Implement output to logfile by flag --logfile
+	// rootCmd.InheritedFlags().StringVar(&WatcherConfig.logfile, "logfile", "/tmp/go-monkill.log", "Enable debug logging")
 	watchCmd.PersistentFlags().IntVar(&WatcherConfig.pid, "pid", defaultPid, "PID for watching")
 	watchCmd.PersistentFlags().StringVar(&WatcherConfig.command, "command", "ping jtprog.ru -c 2", "Command for running")
 	watchCmd.PersistentFlags().Int64Var(&WatcherConfig.timeout, "timeout", defaultTimeOut, "Set timeout for check status of process")
 }
 
-// Waiter interface
+// Waiter interface for monitor process PID every timeout milliseconds
 type Waiter interface {
 	Wait(pid int, timeout int64) (<-chan struct{}, error)
 }
