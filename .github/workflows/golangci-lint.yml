@@ -1,0 +1,30 @@
+on:
+  push:
+    paths:
+      - "go.sum"
+      - "go.mod"
+      - "**.go"
+      - ".github/workflows/golangci-lint.yml"
+      - ".golangci.yml"
+  pull_request:
+    paths:
+      - "go.sum"
+      - "go.mod"
+      - "**.go"
+      - ".github/workflows/golangci-lint.yml"
+      - ".golangci.yml"
+
+name: GolangCI-lint
+
+jobs:
+  golangci:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.42.0

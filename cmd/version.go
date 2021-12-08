@@ -1,3 +1,5 @@
+// Package cmd contains all commands
+
 package cmd
 
 import (
@@ -6,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// versionCmd represents the version command
+// versionCmd – show current version of this package
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number of monkill",

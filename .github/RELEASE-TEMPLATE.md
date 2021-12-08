@@ -1,3 +1,4 @@
-# Announcements
+# Release name
 
-* First announcement
+- First feature
+- Second feature
