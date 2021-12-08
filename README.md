@@ -1,15 +1,17 @@
 # go-monkill
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/jtprogru/go-monkill.svg)](https://pkg.go.dev/github.com/jtprogru/go-monkill)
+[![GolangCI-lint](https://github.com/jtprogru/go-monkill/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/jtprogru/go-monkill/actions/workflows/golangci-lint.yml)
 [![build](https://github.com/jtprogru/go-monkill/actions/workflows/build.yml/badge.svg)](https://github.com/jtprogru/go-monkill/actions/workflows/build.yml)
 [![publish](https://github.com/jtprogru/go-monkill/actions/workflows/publish.yml/badge.svg)](https://github.com/jtprogru/go-monkill/actions/workflows/publish.yml)
 [![GitHub stars](https://img.shields.io/github/stars/jtprogru/go-monkill.svg)](https://github.com/jtprogru/go-monkill/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues-raw/jtprogru/go-monkill)](https://github.com/jtprogru/go-monkill/issues)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/jtprogru/go-monkill)](https://github.com/jtprogru/go-monkill/releases/latest)
 [![Go report](https://goreportcard.com/badge/github.com/jtprogru/go-monkill)](https://goreportcard.com/report/github.com/jtprogru/go-monkill)
-![GitHub](https://img.shields.io/github/license/jtprogru/go-monkill)
-![Linux](https://img.shields.io/badge/-Linux-grey?logo=linux)
+[![GitHub](https://img.shields.io/github/license/jtprogru/go-monkill)](LICENSE)
+[![Linux](https://img.shields.io/badge/-Linux-grey?logo=linux)](https://en.wikipedia.org/wiki/Linux)
 [![Donate](https://img.shields.io/badge/-Donate-yellow?logo=paypal)](https://paypal.me/jtprogru)
+[![LoC](https://tokei.rs/b1/github/jtprogru/go-monkill)](https://github.com/jtprogru/go-monkill)
 
 A very simple utility that allows you to run the desired command or script as soon as a certain process with a known PID completes correctly or with an error.
 
