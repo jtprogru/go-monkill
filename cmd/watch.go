@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"errors"
 	"os"
 
 	"github.com/jtprogru/go-monkill/pkg/executor"
@@ -76,6 +77,9 @@ type Executor interface {
 // &WatcherConfig command as command for running - defined in flag --command
 // &WatcherConfig timeout as timeout for watch - defined in flag --timeout
 func watcher(pid int, command string, timeout int64, w Waiter, e Executor, l zerolog.Logger) error {
+	if err := checkPID(pid, l); err != nil {
+		return err
+	}
 	l.Info().Int("pid", pid).Str("command", command).Msg("Arguments readed")
 	ch, err := w.Wait(pid, timeout)
 	if err != nil {
@@ -89,5 +93,18 @@ func watcher(pid int, command string, timeout int64, w Waiter, e Executor, l zer
 		l.Error().Err(err).Msg("Break execution. Error on start command")
 		return err
 	}
+	return nil
+}
+
+func checkPID(pid int, l zerolog.Logger) error {
+	if pid == -1 || pid == 0 {
+		l.Fatal().Int("pid", pid).Msg("PID was not defined")
+		return errors.New("PID was not defined")
+	}
+	if pid == 1 {
+		l.Fatal().Int("pid", pid).Msg("PID was defined as 1 - this is PID for init process")
+		return errors.New("PID was defined as 1 - this is PID for init process")
+	}
+	l.Info().Int("pid", pid).Msgf("PID was defined as %d", pid)
 	return nil
 }
