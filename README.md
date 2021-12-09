@@ -13,7 +13,7 @@
 [![LoC](https://tokei.rs/b1/github/jtprogru/go-monkill)](https://github.com/jtprogru/go-monkill)
 [![Donate](https://img.shields.io/badge/-Donate-yellow?logo=paypal)](https://paypal.me/jtprogru)
 
-A very simple utility that allows you to run the desired command or script as soon as a certain process with a known PID completes correctly or with an error.
+Very simple utility that allows you to run the desired command or script as soon as a certain process with a known PID completes correctly or with an error.
 
 
 ## Example

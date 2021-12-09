@@ -12,7 +12,7 @@ type Executor struct{}
 
 // Exec - running Executor with command (i.e.: "ping jtprog.ru -c 4" )
 // TODO: Implement verbose logging for output
-func (e Executor) Exec(command string) error {
+func (e *Executor) Exec(command string) error {
 	cmds := strings.Split(command, " ")
 	if len(cmds) == 0 {
 		return errors.New("command not specified")

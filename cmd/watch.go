@@ -25,7 +25,7 @@ go-monkill watch --pid 12345 --command "ping jtprog.ru -c 4"
 	RunE: func(cmd *cobra.Command, args []string) error {
 		l := zerolog.New(os.Stderr)
 		l.Level(zerolog.TraceLevel)
-		return watcher(WatcherConfig.pid, WatcherConfig.command, WatcherConfig.timeout, waiter.Waiter{}, executor.Executor{}, l)
+		return watcher(WatcherConfig.pid, WatcherConfig.command, WatcherConfig.timeout, &waiter.Waiter{}, &executor.Executor{}, l)
 	},
 }
 
