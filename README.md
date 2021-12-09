@@ -10,8 +10,8 @@
 [![Go report](https://goreportcard.com/badge/github.com/jtprogru/go-monkill)](https://goreportcard.com/report/github.com/jtprogru/go-monkill)
 [![GitHub](https://img.shields.io/github/license/jtprogru/go-monkill)](LICENSE)
 [![Linux](https://img.shields.io/badge/-Linux-grey?logo=linux)](https://en.wikipedia.org/wiki/Linux)
-[![Donate](https://img.shields.io/badge/-Donate-yellow?logo=paypal)](https://paypal.me/jtprogru)
 [![LoC](https://tokei.rs/b1/github/jtprogru/go-monkill)](https://github.com/jtprogru/go-monkill)
+[![Donate](https://img.shields.io/badge/-Donate-yellow?logo=paypal)](https://paypal.me/jtprogru)
 
 A very simple utility that allows you to run the desired command or script as soon as a certain process with a known PID completes correctly or with an error.
 
@@ -24,6 +24,29 @@ go-monkill watch --pid=12345 --command="ping jtprog.ru -c 4"
 ```
 
 When process with PID `12345` will finish or be killed, `go-monkill` will run command `ping jtprog.ru -c 4`
+
+## Install
+
+You can install this utility in the following ways:
+
+### From pkg.go.dev
+```shell
+go install github.com/jtprogru/go-monkill
+```
+
+### Get binary
+```shell
+VERSION=v0.2.0 wget "https://github.com/jtprogru/go-monkill/releases/download/${VERSION}/go-monkill-darwin-amd64" -O /tmp/go-monkill
+sudo mv /tmp/go-monkill /usr/local/bin/go-monkill
+sudo chmod a+x /usr/local/bin/go-monkill
+```
+
+### Get from source code
+```shell
+git clone https://github.com/jtprogru/go-monkill
+cd go-monkill
+go install .
+```
 
 ## Feedback
 
