@@ -23,7 +23,12 @@ For example:
 go-monkill watch --pid 12345 --command "ping jtprog.ru -c 4"
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		l := zerolog.New(os.Stderr).Level(zerolog.DebugLevel)
+		l := zerolog.New(os.Stderr)
+		if Verbose {
+			zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		} else {
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		}
 
 		return watcher(
 			WatcherConfig.pid,
@@ -34,9 +39,6 @@ go-monkill watch --pid 12345 --command "ping jtprog.ru -c 4"
 			l)
 	},
 }
-
-// Verbose flag
-//var Verbose bool
 
 // defaultPid is -1 for
 var defaultPid int = -1
@@ -57,6 +59,7 @@ var WatcherConfig struct {
 // &WatcherConfig command as command for running - defined in flag --command
 // &WatcherConfig timeout as timeout for check process - defined in flag --timeout
 func init() {
+	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
 	rootCmd.AddCommand(watchCmd)
 	watchCmd.PersistentFlags().IntVar(
 		&WatcherConfig.pid,
@@ -90,6 +93,7 @@ type Executor interface {
 // &WatcherConfig command as command for running - defined in flag --command
 // &WatcherConfig timeout as timeout for watch - defined in flag --timeout
 func watcher(pid int, command string, timeout int64, w Waiter, e Executor, l zerolog.Logger) error {
+	l.Debug().Int("pid", pid).Int64("timeout", timeout).Msg("Watcher was started")
 	if err := checkPid(pid, l); err != nil {
 		return err
 	}
