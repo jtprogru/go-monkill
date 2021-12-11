@@ -10,7 +10,7 @@ import (
 const Version string = "v0.2.0"
 
 // rootCmd – default root command
-// rootCmd show help message
+// rootCmd by default show help message
 var rootCmd = &cobra.Command{
 	Use:   "monkill",
 	Short: "Monkill for watching a process will finish or be killed",

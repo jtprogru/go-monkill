@@ -12,8 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// watchCmd – run watch func
-//
+// watchCmd – command for run watch func
 var watchCmd = &cobra.Command{
 	Use:   "watch",
 	Short: "A brief description of your command",
@@ -24,9 +23,15 @@ For example:
 go-monkill watch --pid 12345 --command "ping jtprog.ru -c 4"
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		l := zerolog.New(os.Stderr)
-		l.Level(zerolog.TraceLevel)
-		return watcher(WatcherConfig.pid, WatcherConfig.command, WatcherConfig.timeout, &waiter.Waiter{}, &executor.Executor{}, l)
+		l := zerolog.New(os.Stderr).Level(zerolog.DebugLevel)
+
+		return watcher(
+			WatcherConfig.pid,
+			WatcherConfig.command,
+			WatcherConfig.timeout,
+			&waiter.Waiter{},
+			&executor.Executor{},
+			l)
 	},
 }
 
@@ -53,13 +58,21 @@ var WatcherConfig struct {
 // &WatcherConfig timeout as timeout for check process - defined in flag --timeout
 func init() {
 	rootCmd.AddCommand(watchCmd)
-	// TODO: Implement verbose log output by flag --verbose
-	// rootCmd.InheritedFlags().BoolVar(&Verbose, "verbose", false, "Enable debug logging")
-	// TODO: Implement output to logfile by flag --logfile
-	// rootCmd.InheritedFlags().StringVar(&WatcherConfig.logfile, "logfile", "/tmp/go-monkill.log", "Enable debug logging")
-	watchCmd.PersistentFlags().IntVar(&WatcherConfig.pid, "pid", defaultPid, "PID for watching")
-	watchCmd.PersistentFlags().StringVar(&WatcherConfig.command, "command", "ping jtprog.ru -c 2", "Command for running")
-	watchCmd.PersistentFlags().Int64Var(&WatcherConfig.timeout, "timeout", defaultTimeOut, "Set timeout for check status of process")
+	watchCmd.PersistentFlags().IntVar(
+		&WatcherConfig.pid,
+		"pid",
+		defaultPid,
+		"PID for watching")
+	watchCmd.PersistentFlags().StringVar(
+		&WatcherConfig.command,
+		"command",
+		"ping jtprog.ru -c 2",
+		"Command for running")
+	watchCmd.PersistentFlags().Int64Var(
+		&WatcherConfig.timeout,
+		"timeout",
+		defaultTimeOut,
+		"Set timeout for check status of process")
 }
 
 // Waiter interface for monitor process PID every timeout milliseconds
@@ -72,12 +85,12 @@ type Executor interface {
 	Exec(command string) error
 }
 
-// watcher – run Waiter.Wait
+// watcher – func run Waiter.Wait
 // &WatcherConfig pid as PID for monitoring – defined in flag --pid
 // &WatcherConfig command as command for running - defined in flag --command
 // &WatcherConfig timeout as timeout for watch - defined in flag --timeout
 func watcher(pid int, command string, timeout int64, w Waiter, e Executor, l zerolog.Logger) error {
-	if err := checkPID(pid, l); err != nil {
+	if err := checkPid(pid, l); err != nil {
 		return err
 	}
 	l.Info().Int("pid", pid).Str("command", command).Msg("Arguments readed")
@@ -96,7 +109,8 @@ func watcher(pid int, command string, timeout int64, w Waiter, e Executor, l zer
 	return nil
 }
 
-func checkPID(pid int, l zerolog.Logger) error {
+// checkPid – func check correctness defined PID
+func checkPid(pid int, l zerolog.Logger) error {
 	if pid == -1 || pid == 0 {
 		l.Fatal().Int("pid", pid).Msg("PID was not defined")
 		return errors.New("PID was not defined")
