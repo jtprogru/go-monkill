@@ -4,11 +4,9 @@ package cmd
 
 import (
 	"errors"
-	"os"
-
 	"github.com/jtprogru/go-monkill/pkg/executor"
 	"github.com/jtprogru/go-monkill/pkg/waiter"
-	"github.com/rs/zerolog"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -23,11 +21,11 @@ For example:
 go-monkill watch --pid 12345 --command "ping jtprog.ru -c 4"
 `,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		l := zerolog.New(os.Stderr)
+		l := logrus.New()
 		if Verbose {
-			zerolog.SetGlobalLevel(zerolog.DebugLevel)
+			l.SetLevel(logrus.DebugLevel)
 		} else {
-			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+			l.SetLevel(logrus.InfoLevel)
 		}
 
 		return watcher(
@@ -41,7 +39,7 @@ go-monkill watch --pid 12345 --command "ping jtprog.ru -c 4"
 }
 
 // defaultPid is -1 for
-var defaultPid int = -1
+var defaultPid = -1
 
 // defaultTimeOut is 250 milliseconds
 var defaultTimeOut int64 = 250
@@ -92,37 +90,38 @@ type Executor interface {
 // &WatcherConfig pid as PID for monitoring – defined in flag --pid
 // &WatcherConfig command as command for running - defined in flag --command
 // &WatcherConfig timeout as timeout for watch - defined in flag --timeout
-func watcher(pid int, command string, timeout int64, w Waiter, e Executor, l zerolog.Logger) error {
-	l.Debug().Int("pid", pid).Int64("timeout", timeout).Msg("Watcher was started")
+func watcher(pid int, command string, timeout int64, w Waiter, e Executor, l *logrus.Logger) error {
+
+	l.Debug("pid ", pid, " timeout ", timeout, " watcher was started")
 	if err := checkPid(pid, l); err != nil {
 		return err
 	}
-	l.Info().Int("pid", pid).Str("command", command).Msg("Arguments readed")
+	l.Info("pid ", pid, " command ", command, " arguments readed")
 	ch, err := w.Wait(pid, timeout)
 	if err != nil {
-		l.Error().Err(err).Msg("Break execution. Error on watch process")
+		l.Error("break execution. Error on watch process ", err)
 		return err
 	}
 	<-ch
-	l.Info().Int("pid", pid).Msg("Process finished, run command")
+	l.Info("pid ", pid, " process finished, run command")
 	err = e.Exec(command)
 	if err != nil {
-		l.Error().Err(err).Msg("Break execution. Error on start command")
+		l.Error("break execution. Error on start command ", err)
 		return err
 	}
 	return nil
 }
 
 // checkPid – func check correctness defined PID
-func checkPid(pid int, l zerolog.Logger) error {
+func checkPid(pid int, l *logrus.Logger) error {
 	if pid == -1 || pid == 0 {
-		l.Fatal().Int("pid", pid).Msg("PID was not defined")
+		l.Debug("pid ", pid, " PID was not defined")
 		return errors.New("PID was not defined")
 	}
 	if pid == 1 {
-		l.Fatal().Int("pid", pid).Msg("PID was defined as 1 - this is PID for init process")
+		l.Debug("pid ", pid, " PID was defined as 1 - this is PID for init process")
 		return errors.New("PID was defined as 1 - this is PID for init process")
 	}
-	l.Info().Int("pid", pid).Msgf("PID was defined as %d", pid)
+	l.Info("pid ", pid, " PID was defined as ", pid)
 	return nil
 }
