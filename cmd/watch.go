@@ -114,14 +114,14 @@ func watcher(pid int, command string, timeout int64, w Waiter, e Executor, l *lo
 
 // checkPid – func check correctness defined PID
 func checkPid(pid int, l *logrus.Logger) error {
-	if pid == -1 || pid == 0 {
-		l.Debug("pid ", pid, " PID was not defined")
+	if pid < 1 {
+		l.WithFields(logrus.Fields{"pid": pid}).Debug("PID was not defined")
 		return errors.New("PID was not defined")
 	}
 	if pid == 1 {
-		l.Debug("pid ", pid, " PID was defined as 1 - this is PID for init process")
+		l.WithFields(logrus.Fields{"pid": pid}).Debug("PID was defined as 1 - this is PID for init process")
 		return errors.New("PID was defined as 1 - this is PID for init process")
 	}
-	l.Info("pid ", pid, " PID was defined as ", pid)
+	l.WithFields(logrus.Fields{"pid": pid}).Info("PID was defined")
 	return nil
 }
