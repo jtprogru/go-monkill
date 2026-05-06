@@ -99,8 +99,16 @@ Hook failures are logged but do **not** override the child's exit code.
 
 ```shell
 brew tap jtprogru/tap
-brew install go-monkill
+brew install --cask go-monkill
 ```
+
+> **Migrating from v0.x?** The package was distributed as a Homebrew formula
+> until v0.8.x and is shipped as a cask starting with v1.0.0. Run:
+>
+> ```shell
+> brew uninstall go-monkill
+> brew install --cask jtprogru/tap/go-monkill
+> ```
 
 ### Pre-built binaries
 

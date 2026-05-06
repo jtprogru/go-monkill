@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-06
+
+First stable release. Marks the API and the CLI surface as stable; future
+breaking changes will bump the major version.
+
+### Changed
+- **Homebrew distribution**: switched from formula to cask via goreleaser's
+  `homebrew_casks` schema (the legacy `brews` is being phased out upstream).
+  The cask installs the same prebuilt binary, removes the macOS quarantine
+  xattr in a postflight hook so Gatekeeper doesn't refuse to launch the
+  unsigned binary, and ships shell completions.
+
+### Migration
+
+If you installed via `brew install jtprogru/tap/go-monkill` (formula),
+run once:
+
+```shell
+brew uninstall go-monkill
+brew install --cask jtprogru/tap/go-monkill
+```
+
+The formula `Formula/go-monkill.rb` will be removed from the tap shortly
+after v1.0.0 ships.
+
 ## [0.8.0] - 2026-05-06
 
 ### Added
@@ -109,7 +134,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Initial release on the new release infrastructure (handcrafted GitHub Actions
 workflow, `softprops/action-gh-release`).
 
-[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/jtprogru/go-monkill/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/jtprogru/go-monkill/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jtprogru/go-monkill/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jtprogru/go-monkill/compare/v0.5.0...v0.6.0
