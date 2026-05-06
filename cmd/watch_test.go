@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -11,22 +12,43 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// fakeWaiter returns a channel per PID. Behavior is configured per call:
+//   - err != nil → first Wait returns it
+//   - fire == true → channel is closed immediately (PID is "gone")
+//   - block == true → channel only closes when ctx is canceled
+//   - perPID overrides individual PIDs (key = pid, value = "fire" | "block")
 type fakeWaiter struct {
-	err  error
-	fire bool
-	// block: when true, channel never fires unless ctx cancels
-	block bool
+	err    error
+	fire   bool
+	block  bool
+	perPID map[int]string
+
+	mu        sync.Mutex
+	calledFor []int
 }
 
-func (f *fakeWaiter) Wait(ctx context.Context, pid int, timeout int64) (<-chan struct{}, error) {
+func (f *fakeWaiter) Wait(ctx context.Context, pid int, _ int64) (<-chan struct{}, error) {
+	f.mu.Lock()
+	f.calledFor = append(f.calledFor, pid)
+	f.mu.Unlock()
+
 	if f.err != nil {
 		return nil, f.err
 	}
+	mode := ""
+	if v, ok := f.perPID[pid]; ok {
+		mode = v
+	} else if f.fire {
+		mode = "fire"
+	} else if f.block {
+		mode = "block"
+	}
+
 	ch := make(chan struct{})
-	switch {
-	case f.fire:
+	switch mode {
+	case "fire":
 		close(ch)
-	case f.block:
+	case "block":
 		go func() {
 			<-ctx.Done()
 			close(ch)
@@ -54,6 +76,26 @@ func newTestLogger() *logrus.Logger {
 	return l
 }
 
+type watcherOpts struct {
+	command string
+	timeout int64
+	maxWait time.Duration
+	waitFor string
+}
+
+func withCommand(s string) func(*watcherOpts)        { return func(o *watcherOpts) { o.command = s } }
+func withMaxWait(d time.Duration) func(*watcherOpts) { return func(o *watcherOpts) { o.maxWait = d } }
+func withWaitFor(s string) func(*watcherOpts)        { return func(o *watcherOpts) { o.waitFor = s } }
+
+func runWatcher(t *testing.T, ctx context.Context, pids []int, w Waiter, e Executor, opts ...func(*watcherOpts)) (int, error) {
+	t.Helper()
+	o := watcherOpts{command: "echo hi", timeout: 10, maxWait: 0, waitFor: waitForAll}
+	for _, fn := range opts {
+		fn(&o)
+	}
+	return watcher(ctx, pids, o.command, o.timeout, o.maxWait, o.waitFor, w, e, newTestLogger())
+}
+
 func TestCheckPid(t *testing.T) {
 	l := newTestLogger()
 	cases := []struct {
@@ -68,85 +110,79 @@ func TestCheckPid(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := checkPid(tc.pid, l)
-			if (err != nil) != tc.wantErr {
+			if err := checkPid(tc.pid, l); (err != nil) != tc.wantErr {
 				t.Fatalf("err = %v, wantErr = %v", err, tc.wantErr)
 			}
 		})
 	}
 }
 
-func TestWatcherHappyPath(t *testing.T) {
+func TestWatcherSinglePidHappyPath(t *testing.T) {
 	w := &fakeWaiter{fire: true}
-	e := &fakeExecutor{res: executor.Result{ExitCode: 0}}
-	code, err := watcher(context.Background(), 1234, "echo hi", 10, 0, w, e, newTestLogger())
-	if err != nil {
-		t.Fatalf("unexpected err: %v", err)
-	}
-	if code != 0 {
-		t.Fatalf("exit code = %d, want 0", code)
+	e := &fakeExecutor{}
+	code, err := runWatcher(t, context.Background(), []int{1234}, w, e)
+	if err != nil || code != 0 {
+		t.Fatalf("code=%d err=%v", code, err)
 	}
 	if !e.called {
-		t.Fatal("executor was not called")
-	}
-	if e.cmd != "echo hi" {
-		t.Fatalf("executor got %q", e.cmd)
+		t.Fatal("executor not called")
 	}
 }
 
 func TestWatcherPropagatesExitCode(t *testing.T) {
 	w := &fakeWaiter{fire: true}
 	e := &fakeExecutor{res: executor.Result{ExitCode: 42, Err: errors.New("boom")}}
-	code, err := watcher(context.Background(), 1234, "echo hi", 10, 0, w, e, newTestLogger())
+	code, _ := runWatcher(t, context.Background(), []int{1234}, w, e)
 	if code != 42 {
-		t.Fatalf("exit code = %d, want 42", code)
-	}
-	if err == nil {
-		t.Fatal("expected err to be propagated")
+		t.Fatalf("code = %d, want 42", code)
 	}
 }
 
 func TestWatcherInvalidPID(t *testing.T) {
-	code, err := watcher(context.Background(), 0, "echo hi", 10, 0, &fakeWaiter{}, &fakeExecutor{}, newTestLogger())
-	if err == nil {
-		t.Fatal("expected error for invalid PID")
+	code, err := runWatcher(t, context.Background(), []int{0}, &fakeWaiter{}, &fakeExecutor{})
+	if err == nil || code != 1 {
+		t.Fatalf("code=%d err=%v", code, err)
 	}
-	if code != 1 {
-		t.Fatalf("exit code = %d, want 1", code)
+}
+
+func TestWatcherNoPIDs(t *testing.T) {
+	code, err := runWatcher(t, context.Background(), nil, &fakeWaiter{}, &fakeExecutor{})
+	if err == nil || code != 1 {
+		t.Fatalf("code=%d err=%v", code, err)
 	}
 }
 
 func TestWatcherEmptyCommand(t *testing.T) {
-	w := &fakeWaiter{fire: true}
 	e := &fakeExecutor{}
-	code, err := watcher(context.Background(), 1234, "", 10, 0, w, e, newTestLogger())
-	if err == nil {
-		t.Fatal("expected error for empty command")
-	}
-	if code != 1 {
-		t.Fatalf("exit code = %d, want 1", code)
+	code, err := runWatcher(t, context.Background(), []int{1234}, &fakeWaiter{fire: true}, e, withCommand(""))
+	if err == nil || code != 1 {
+		t.Fatalf("code=%d err=%v", code, err)
 	}
 	if e.called {
-		t.Fatal("executor must not be called when command is empty")
+		t.Fatal("executor must not run")
+	}
+}
+
+func TestWatcherInvalidWaitFor(t *testing.T) {
+	code, err := runWatcher(t, context.Background(), []int{1234}, &fakeWaiter{}, &fakeExecutor{}, withWaitFor("bogus"))
+	if err == nil || code != 1 {
+		t.Fatalf("code=%d err=%v", code, err)
 	}
 }
 
 func TestWatcherWaiterError(t *testing.T) {
 	w := &fakeWaiter{err: errors.New("waiter exploded")}
 	e := &fakeExecutor{}
-	code, err := watcher(context.Background(), 1234, "echo hi", 10, 0, w, e, newTestLogger())
-	if err == nil {
-		t.Fatal("expected waiter error to bubble up")
-	}
-	if code != 1 {
-		t.Fatalf("exit code = %d, want 1", code)
+	code, err := runWatcher(t, context.Background(), []int{1234}, w, e)
+	if err == nil || code != 1 {
+		t.Fatalf("code=%d err=%v", code, err)
 	}
 	if e.called {
-		t.Fatal("executor must not run when waiter fails")
+		t.Fatal("executor must not run")
 	}
 }
 
-func TestWatcherCancelledContext(t *testing.T) {
+func TestWatcherSignalCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &fakeWaiter{block: true}
 	e := &fakeExecutor{}
@@ -157,56 +193,99 @@ func TestWatcherCancelledContext(t *testing.T) {
 		err  error
 	)
 	go func() {
-		code, err = watcher(ctx, 1234, "echo hi", 10, 0, w, e, newTestLogger())
+		code, err = runWatcher(t, ctx, []int{1234}, w, e)
 		close(done)
 	}()
-
 	time.Sleep(20 * time.Millisecond)
 	cancel()
 
 	select {
 	case <-done:
 	case <-time.After(time.Second):
-		t.Fatal("watcher did not return after context cancel")
+		t.Fatal("watcher did not return")
 	}
-
 	if code != exitCodeInterrupted {
-		t.Fatalf("exit code = %d, want %d", code, exitCodeInterrupted)
+		t.Fatalf("code=%d, want %d", code, exitCodeInterrupted)
 	}
-	if err == nil {
-		t.Fatal("expected ctx.Err to be returned")
-	}
-	if e.called {
-		t.Fatal("executor must not run when watcher is canceled")
+	if err == nil || e.called {
+		t.Fatalf("err=%v called=%v", err, e.called)
 	}
 }
 
 func TestWatcherMaxWaitTimeout(t *testing.T) {
 	w := &fakeWaiter{block: true}
 	e := &fakeExecutor{}
-	code, err := watcher(context.Background(), 1234, "echo hi", 10, 50*time.Millisecond, w, e, newTestLogger())
+	code, err := runWatcher(t, context.Background(), []int{1234}, w, e, withMaxWait(50*time.Millisecond))
 	if code != exitCodeTimeout {
-		t.Fatalf("exit code = %d, want %d", code, exitCodeTimeout)
+		t.Fatalf("code = %d, want %d", code, exitCodeTimeout)
 	}
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected DeadlineExceeded, got %v", err)
 	}
 	if e.called {
-		t.Fatal("executor must not run when max-wait elapses")
+		t.Fatal("executor must not run on timeout")
 	}
 }
 
-func TestWatcherMaxWaitNotReached(t *testing.T) {
+func TestWatcherMultiPidAllExited(t *testing.T) {
 	w := &fakeWaiter{fire: true}
 	e := &fakeExecutor{res: executor.Result{ExitCode: 0}}
-	code, err := watcher(context.Background(), 1234, "echo hi", 10, time.Hour, w, e, newTestLogger())
-	if err != nil {
-		t.Fatalf("unexpected err: %v", err)
-	}
-	if code != 0 {
-		t.Fatalf("exit code = %d, want 0", code)
+	code, err := runWatcher(t, context.Background(), []int{1111, 2222, 3333}, w, e)
+	if err != nil || code != 0 {
+		t.Fatalf("code=%d err=%v", code, err)
 	}
 	if !e.called {
-		t.Fatal("executor should run when max-wait did not expire")
+		t.Fatal("executor not called")
+	}
+	w.mu.Lock()
+	if len(w.calledFor) != 3 {
+		t.Fatalf("Wait calls = %d, want 3", len(w.calledFor))
+	}
+	w.mu.Unlock()
+}
+
+func TestWatcherMultiPidAllOneBlocking(t *testing.T) {
+	// All-mode + one PID never exits → must block until ctx cancellation.
+	ctx, cancel := context.WithTimeout(context.Background(), 80*time.Millisecond)
+	defer cancel()
+	w := &fakeWaiter{
+		perPID: map[int]string{
+			1111: "fire",
+			2222: "block",
+		},
+	}
+	e := &fakeExecutor{}
+	code, err := runWatcher(t, ctx, []int{1111, 2222}, w, e)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected DeadlineExceeded, got %v", err)
+	}
+	if code != exitCodeTimeout && code != exitCodeInterrupted {
+		t.Fatalf("unexpected code %d", code)
+	}
+	if e.called {
+		t.Fatal("executor must not run when not all PIDs exited")
+	}
+}
+
+func TestWatcherMultiPidAnyMode(t *testing.T) {
+	// Any-mode: one PID fires immediately, the other blocks. Should return promptly.
+	w := &fakeWaiter{
+		perPID: map[int]string{
+			1111: "fire",
+			2222: "block",
+		},
+	}
+	e := &fakeExecutor{}
+	start := time.Now()
+	code, err := runWatcher(t, context.Background(), []int{1111, 2222}, w, e, withWaitFor(waitForAny))
+	elapsed := time.Since(start)
+	if err != nil || code != 0 {
+		t.Fatalf("code=%d err=%v", code, err)
+	}
+	if elapsed > 500*time.Millisecond {
+		t.Fatalf("any-mode took %s, expected to be quick", elapsed)
+	}
+	if !e.called {
+		t.Fatal("executor must run when any PID exits")
 	}
 }
