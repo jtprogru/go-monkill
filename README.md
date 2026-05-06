@@ -18,7 +18,8 @@ Very simple utility that allows you to run the desired command or script as soon
 
 ## Features
 
-- Watch a PID and run an arbitrary command once the process exits.
+- Watch one or more PIDs and run an arbitrary command once they exit.
+- Multi-PID with `--wait-for all|any` — wait for every PID to terminate, or just the first one.
 - Optional overall watch deadline via `--max-wait` (e.g. `30s`, `5m`).
 - Shell-style command parsing (single/double quotes, escapes) via [shlex](https://github.com/google/shlex).
 - Verbose debug logging of every poll cycle, watch duration and the command's exit code.
@@ -34,6 +35,16 @@ go-monkill watch --pid=12345 --command="ping jtprog.ru -c 4"
 
 When process with PID `12345` finishes or is killed, `go-monkill` runs `ping jtprog.ru -c 4` and exits with the command's exit code.
 
+Multiple PIDs (repeat the flag or pass a comma-separated list):
+
+```shell
+# wait for both jobs to finish, then clean up
+go-monkill watch --pid 1234,5678 --wait-for all --command "cleanup.sh"
+
+# notify as soon as the first one is done
+go-monkill watch --pid 1234 --pid 5678 --wait-for any --command "echo first done"
+```
+
 Quoted arguments work as in a shell:
 
 ```shell
@@ -44,8 +55,9 @@ go-monkill watch --pid=12345 --command="sh -c 'echo done >> /var/log/notify.log'
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--pid` | _required_ | PID to watch |
+| `--pid` | _required_ | PID(s) to watch — repeat the flag or pass a comma-separated list |
 | `--command` | _required_ | command to run after the process exits (shell-style quoting supported) |
+| `--wait-for` | `all` | with multiple PIDs: `all` exited or `any` first one |
 | `--timeout` | `250` | poll interval in milliseconds |
 | `--max-wait` | `0` | give up waiting after this duration (e.g. `30s`, `5m`); `0` = unlimited |
 | `-v`, `--verbose` | `false` | verbose (debug-level) output |

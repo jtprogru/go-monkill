@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-06
+
+### Added
+- Multi-PID monitoring: `--pid` accepts a comma-separated list or can be
+  repeated. Example: `--pid 1234,5678` or `--pid 1234 --pid 5678`.
+- `--wait-for all|any` flag to control aggregation: run the command once
+  every PID has exited (`all`, default — backward-compatible for
+  single-PID usage) or as soon as the first PID exits (`any`). When `any`
+  fires, the remaining waits are cancelled via context.
+
+### Changed
+- `watcher` signature now accepts `[]int` for PIDs and a `waitFor` mode
+  string. The interface for `Waiter.Wait` is unchanged.
+
 ## [0.6.0] - 2026-05-06
 
 ### Added
@@ -80,7 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Initial release on the new release infrastructure (handcrafted GitHub Actions
 workflow, `softprops/action-gh-release`).
 
-[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/jtprogru/go-monkill/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jtprogru/go-monkill/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jtprogru/go-monkill/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/jtprogru/go-monkill/compare/v0.3.0...v0.4.0
