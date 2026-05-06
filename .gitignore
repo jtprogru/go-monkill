@@ -49,4 +49,5 @@ tags
 .idea/
 .bin/
 dist/
+plans/
 # End of https://www.toptal.com/developers/gitignore/api/idea,vim,go

@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/jtprogru/go-monkill)](https://goreportcard.com/report/github.com/jtprogru/go-monkill)
 [![GolangCI-lint](https://github.com/jtprogru/go-monkill/actions/workflows/golangci-lint.yml/badge.svg)](https://github.com/jtprogru/go-monkill/actions/workflows/golangci-lint.yml)
 [![build](https://github.com/jtprogru/go-monkill/actions/workflows/build.yml/badge.svg)](https://github.com/jtprogru/go-monkill/actions/workflows/build.yml)
-[![publish](https://github.com/jtprogru/go-monkill/actions/workflows/publish.yml/badge.svg)](https://github.com/jtprogru/go-monkill/actions/workflows/publish.yml)
+[![release](https://github.com/jtprogru/go-monkill/actions/workflows/release.yml/badge.svg)](https://github.com/jtprogru/go-monkill/actions/workflows/release.yml)
 [![GitHub stars](https://img.shields.io/github/stars/jtprogru/go-monkill.svg?color=gold)](https://github.com/jtprogru/go-monkill/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues-raw/jtprogru/go-monkill?color=blue)](https://github.com/jtprogru/go-monkill/issues)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/jtprogru/go-monkill)](https://github.com/jtprogru/go-monkill/releases/latest)
@@ -19,34 +19,55 @@ Very simple utility that allows you to run the desired command or script as soon
 
 ## Example
 
-Example running:
 ```shell
 go-monkill watch --pid=12345 --command="ping jtprog.ru -c 4"
 ```
 
-When process with PID `12345` will finish or be killed, `go-monkill` will run command `ping jtprog.ru -c 4`
+When process with PID `12345` finishes or is killed, `go-monkill` runs `ping jtprog.ru -c 4` and exits with the command's exit code.
+
+### Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--pid` | _required_ | PID to watch |
+| `--command` | _required_ | command to run after the process exits |
+| `--timeout` | `250` | poll interval in milliseconds |
+| `-v`, `--verbose` | `false` | verbose (debug-level) output |
+| `--logfile` | _empty_ | path to a log file (JSON format); empty disables file logging |
 
 ## Install
 
-You can install this utility in the following ways:
+### Homebrew (macOS / Linux)
 
-### From pkg.go.dev
 ```shell
-go install github.com/jtprogru/go-monkill
+brew tap jtprogru/tap
+brew install go-monkill
 ```
 
-### Get binary
+### Pre-built binaries
+
+Download from the [releases page](https://github.com/jtprogru/go-monkill/releases/latest), e.g.:
+
 ```shell
-VERSION=v0.2.0 wget "https://github.com/jtprogru/go-monkill/releases/download/${VERSION}/go-monkill-darwin-amd64" -O /tmp/go-monkill
-sudo mv /tmp/go-monkill /usr/local/bin/go-monkill
-sudo chmod a+x /usr/local/bin/go-monkill
+VERSION=v0.3.0
+OS=Darwin   # or Linux
+ARCH=arm64  # or x86_64
+curl -L "https://github.com/jtprogru/go-monkill/releases/download/${VERSION}/go-monkill_${OS}_${ARCH}.tar.gz" \
+  | tar -xz -C /tmp go-monkill
+sudo install -m 0755 /tmp/go-monkill /usr/local/bin/go-monkill
 ```
 
-### Get from source code
+Verify the checksum signature:
+
 ```shell
-git clone https://github.com/jtprogru/go-monkill
-cd go-monkill
-go install .
+gpg --verify checksums.txt.sig checksums.txt
+sha256sum -c checksums.txt
+```
+
+### From source
+
+```shell
+go install github.com/jtprogru/go-monkill@latest
 ```
 
 ## Feedback
