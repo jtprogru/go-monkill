@@ -18,7 +18,8 @@ Very simple utility that allows you to run the desired command or script as soon
 
 ## Features
 
-- Watch one or more PIDs and run an arbitrary command once they exit.
+- `watch` — observe one or more existing PIDs and run a command after they exit.
+- `run` — spawn a child process and dispatch hooks (`--on-success` / `--on-failure` / `--on-exit`) based on its exit code.
 - Multi-PID with `--wait-for all|any` — wait for every PID to terminate, or just the first one.
 - Optional overall watch deadline via `--max-wait` (e.g. `30s`, `5m`).
 - Shell-style command parsing (single/double quotes, escapes) via [shlex](https://github.com/google/shlex).
@@ -50,6 +51,25 @@ Quoted arguments work as in a shell:
 ```shell
 go-monkill watch --pid=12345 --command="sh -c 'echo done >> /var/log/notify.log'"
 ```
+
+### `run` — spawn a child and dispatch hooks
+
+```shell
+# deploy on success, alert on failure, always run cleanup
+go-monkill run \
+  --on-success "deploy.sh" \
+  --on-failure "alert.sh" \
+  --on-exit    "cleanup.sh" \
+  -- ./tests.sh
+```
+
+The utility exits with the child's exit code. Hooks are evaluated as follows:
+
+- `--on-success` runs when the child exits with code `0`
+- `--on-failure` runs when the child exits with a non-zero code
+- `--on-exit` runs **after** the matching hook above, regardless of outcome
+
+Hook failures are logged but do **not** override the child's exit code.
 
 ### Flags
 
