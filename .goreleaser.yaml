@@ -94,25 +94,30 @@ release:
   prerelease: auto
   name_template: "v{{ .Version }}"
 
-brews:
+homebrew_casks:
   - name: go-monkill
     repository:
       owner: jtprogru
       name: homebrew-tap
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Formula
     homepage: "https://github.com/jtprogru/go-monkill"
     description: "Run a command after a process with a given PID terminates"
-    license: "Apache-2.0"
+    binaries:
+      - go-monkill
+    completions:
+      bash: completions/go-monkill.bash
+      zsh: completions/go-monkill.zsh
+      fish: completions/go-monkill.fish
     commit_author:
       name: goreleaserbot
       email: bot@goreleaser.com
-    commit_msg_template: "chore(brew): bump {{ .ProjectName }} to {{ .Tag }}"
-    test: |
-      system "#{bin}/go-monkill", "version"
-    install: |
-      bin.install "go-monkill"
-      bash_completion.install "completions/go-monkill.bash" => "go-monkill"
-      zsh_completion.install  "completions/go-monkill.zsh"  => "_go-monkill"
-      fish_completion.install "completions/go-monkill.fish"
+    commit_msg_template: "chore(cask): bump {{ .ProjectName }} to {{ .Tag }}"
+    # Strip macOS quarantine xattr from the unsigned binary so Gatekeeper
+    # doesn't refuse to run it after `brew install --cask`.
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/go-monkill"]
+          end
