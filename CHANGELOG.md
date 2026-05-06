@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-06
+
+### Changed
+- Windows is **explicitly** declared unsupported. `main.go` now carries a
+  `//go:build linux || darwin` constraint, so `GOOS=windows go build`
+  fails with `build constraints exclude all Go files` instead of
+  pretending to produce a binary that has never worked anyway.
+- README documents the policy in the lead.
+
+This is a documentation/build-policy change only; no functional changes
+to the CLI surface or behaviour.
+
 ## [1.0.0] - 2026-05-06
 
 First stable release. Marks the API and the CLI surface as stable; future
@@ -134,7 +146,8 @@ after v1.0.0 ships.
 Initial release on the new release infrastructure (handcrafted GitHub Actions
 workflow, `softprops/action-gh-release`).
 
-[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/jtprogru/go-monkill/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jtprogru/go-monkill/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/jtprogru/go-monkill/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jtprogru/go-monkill/compare/v0.6.0...v0.7.0
