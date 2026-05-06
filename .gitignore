@@ -51,5 +51,6 @@ tags
 dist/
 plans/
 cover.out
+completions/
 # End of https://www.toptal.com/developers/gitignore/api/idea,vim,go
 .task/

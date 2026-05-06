@@ -5,6 +5,10 @@ project_name: go-monkill
 before:
   hooks:
     - go mod tidy
+    - mkdir -p completions
+    - sh -c "go run . completion bash > completions/go-monkill.bash"
+    - sh -c "go run . completion zsh  > completions/go-monkill.zsh"
+    - sh -c "go run . completion fish > completions/go-monkill.fish"
 
 builds:
   - id: go-monkill
@@ -39,6 +43,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - completions/*
 
 checksum:
   name_template: "checksums.txt"
@@ -108,3 +113,6 @@ brews:
       system "#{bin}/go-monkill", "version"
     install: |
       bin.install "go-monkill"
+      bash_completion.install "completions/go-monkill.bash" => "go-monkill"
+      zsh_completion.install  "completions/go-monkill.zsh"  => "_go-monkill"
+      fish_completion.install "completions/go-monkill.fish"
