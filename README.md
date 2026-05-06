@@ -16,6 +16,14 @@
 
 Very simple utility that allows you to run the desired command or script as soon as a certain process with a known PID completes correctly or with an error.
 
+## Features
+
+- Watch a PID and run an arbitrary command once the process exits.
+- Shell-style command parsing (single/double quotes, escapes) via [shlex](https://github.com/google/shlex).
+- Verbose debug logging of every poll cycle, watch duration and the command's exit code.
+- Optional JSON-formatted external log file (`--logfile`), parallel with text output to stderr.
+- Graceful shutdown on `SIGINT`/`SIGTERM` — polling stops cleanly, the dependent command is skipped, exit code `130`.
+- Propagates the user-command's exit code as the utility's own exit code.
 
 ## Example
 
@@ -25,15 +33,30 @@ go-monkill watch --pid=12345 --command="ping jtprog.ru -c 4"
 
 When process with PID `12345` finishes or is killed, `go-monkill` runs `ping jtprog.ru -c 4` and exits with the command's exit code.
 
+Quoted arguments work as in a shell:
+
+```shell
+go-monkill watch --pid=12345 --command="sh -c 'echo done >> /var/log/notify.log'"
+```
+
 ### Flags
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--pid` | _required_ | PID to watch |
-| `--command` | _required_ | command to run after the process exits |
+| `--command` | _required_ | command to run after the process exits (shell-style quoting supported) |
 | `--timeout` | `250` | poll interval in milliseconds |
 | `-v`, `--verbose` | `false` | verbose (debug-level) output |
 | `--logfile` | _empty_ | path to a log file (JSON format); empty disables file logging |
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | watched process exited and the user-command succeeded |
+| `1` | invalid input (PID, empty `--command`, parse error, waiter failure) |
+| _N_ | exit code of the user-command if it returned non-zero |
+| `130` | interrupted by `SIGINT`/`SIGTERM` before the watched process exited |
 
 ## Install
 
@@ -68,6 +91,21 @@ sha256sum -c checksums.txt
 
 ```shell
 go install github.com/jtprogru/go-monkill@latest
+```
+
+## Development
+
+The project uses [Task](https://taskfile.dev) instead of `make`. Run `task --list` to see all targets:
+
+```shell
+task install-deps    # go mod tidy
+task fmt             # gofmt -s -w .
+task vet             # go vet ./...
+task lint            # golangci-lint run
+task test            # tests + coverage summary
+task build           # local binary into ./dist
+task release:snapshot  # goreleaser snapshot (no publish, no signing)
+task ci              # vet + lint + test (used by CI)
 ```
 
 ## Feedback
