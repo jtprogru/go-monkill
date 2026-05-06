@@ -1,12 +1,42 @@
 repos:
-- repo: https://github.com/dnephin/pre-commit-golang
-  rev: v0.5.0
-  hooks:
-    - id: go-fmt
-    - id: go-unit-tests
-    - id: go-imports
-    - id: validate-toml
-    - id: no-go-testing
-    - id: go-build
-    - id: go-mod-tidy
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-added-large-files
+        args: [--maxkb=512]
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
 
+  - repo: https://github.com/golangci/golangci-lint
+    rev: v2.1.6
+    hooks:
+      - id: golangci-lint
+
+  - repo: local
+    hooks:
+      - id: gofmt
+        name: gofmt -s -w
+        entry: gofmt -s -w
+        language: system
+        types: [go]
+        pass_filenames: true
+
+      - id: go-mod-tidy
+        name: go mod tidy
+        entry: go mod tidy
+        language: system
+        files: '^(go\.mod|go\.sum|.*\.go)$'
+        pass_filenames: false
+
+      - id: go-test
+        name: go test ./...
+        entry: go test ./...
+        language: system
+        files: '\.go$'
+        pass_filenames: false
