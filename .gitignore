@@ -52,3 +52,4 @@ dist/
 plans/
 cover.out
 # End of https://www.toptal.com/developers/gitignore/api/idea,vim,go
+.task/
