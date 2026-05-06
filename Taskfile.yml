@@ -72,6 +72,14 @@ tasks:
     cmds:
       - goreleaser release --snapshot --clean --skip=sign,publish
 
+  changelog:
+    desc: Regenerate CHANGELOG.md from git history (requires git-cliff)
+    cmds:
+      - git-cliff --output CHANGELOG.md
+    preconditions:
+      - sh: command -v git-cliff
+        msg: "git-cliff is required (brew install git-cliff)"
+
   clean:
     desc: Remove build artifacts and coverage files
     cmds:
