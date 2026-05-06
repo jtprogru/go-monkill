@@ -16,6 +16,11 @@
 
 Very simple utility that allows you to run the desired command or script as soon as a certain process with a known PID completes correctly or with an error.
 
+> **Supported platforms:** Linux and macOS only. Windows is **not** a target —
+> the build is explicitly fenced with `//go:build linux || darwin`, the
+> release pipeline only ships `linux/{amd64,arm64}` and `darwin/{amd64,arm64}`,
+> and the test suite assumes POSIX semantics (signals, `sleep`, `/proc`).
+
 ## Features
 
 - `watch` — observe one or more existing PIDs and run a command after they exit.
