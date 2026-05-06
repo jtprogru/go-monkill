@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/jtprogru/go-monkill/pkg/executor"
 	"github.com/jtprogru/go-monkill/pkg/waiter"
@@ -15,9 +16,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// exitCodeInterrupted is returned when the watcher is canceled before the
-// watched process terminates (matches the conventional 128+SIGINT shell code).
+// exitCodeInterrupted is returned when the watcher is canceled by a signal
+// before the watched process terminates (128+SIGINT, the shell convention).
 const exitCodeInterrupted = 130
+
+// exitCodeTimeout is returned when --max-wait elapses before the watched
+// process terminates (matches the convention used by timeout(1)).
+const exitCodeTimeout = 124
 
 var watchCmd = &cobra.Command{
 	Use:   "watch",
@@ -43,6 +48,7 @@ go-monkill watch --pid 12345 --command "ping jtprog.ru -c 4"
 			WatcherConfig.pid,
 			WatcherConfig.command,
 			WatcherConfig.timeout,
+			WatcherConfig.maxWait,
 			&waiter.Waiter{Logger: l},
 			&executor.Executor{Logger: l},
 			l,
@@ -62,6 +68,7 @@ var WatcherConfig struct {
 	pid     int
 	command string
 	timeout int64
+	maxWait time.Duration
 }
 
 func init() {
@@ -73,6 +80,12 @@ func init() {
 		"timeout",
 		defaultTimeOut,
 		"poll interval in milliseconds",
+	)
+	watchCmd.PersistentFlags().DurationVar(
+		&WatcherConfig.maxWait,
+		"max-wait",
+		0,
+		"give up waiting after this duration (e.g. 30s, 5m); 0 = unlimited",
 	)
 }
 
@@ -93,17 +106,24 @@ func watcher(
 	pid int,
 	command string,
 	timeout int64,
+	maxWait time.Duration,
 	w Waiter,
 	e Executor,
 	l *logrus.Logger,
 ) (int, error) {
-	l.Debugf("watcher start: pid=%d timeout=%dms command=%q", pid, timeout, command)
+	l.Debugf("watcher start: pid=%d timeout=%dms maxWait=%s command=%q", pid, timeout, maxWait, command)
 
 	if err := checkPid(pid, l); err != nil {
 		return 1, err
 	}
 	if command == "" {
 		return 1, errors.New("--command must not be empty")
+	}
+
+	if maxWait > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, maxWait)
+		defer cancel()
 	}
 
 	ch, err := w.Wait(ctx, pid, timeout)
@@ -116,6 +136,10 @@ func watcher(
 	case <-ch:
 		// proceed to run the command
 	case <-ctx.Done():
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			l.Warnf("max-wait %s elapsed before pid=%d exited; skipping command", maxWait, pid)
+			return exitCodeTimeout, ctx.Err()
+		}
 		l.Warnf("interrupted before pid=%d exited; skipping command", pid)
 		return exitCodeInterrupted, ctx.Err()
 	}

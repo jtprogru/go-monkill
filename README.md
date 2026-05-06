@@ -19,6 +19,7 @@ Very simple utility that allows you to run the desired command or script as soon
 ## Features
 
 - Watch a PID and run an arbitrary command once the process exits.
+- Optional overall watch deadline via `--max-wait` (e.g. `30s`, `5m`).
 - Shell-style command parsing (single/double quotes, escapes) via [shlex](https://github.com/google/shlex).
 - Verbose debug logging of every poll cycle, watch duration and the command's exit code.
 - Optional JSON-formatted external log file (`--logfile`), parallel with text output to stderr.
@@ -46,6 +47,7 @@ go-monkill watch --pid=12345 --command="sh -c 'echo done >> /var/log/notify.log'
 | `--pid` | _required_ | PID to watch |
 | `--command` | _required_ | command to run after the process exits (shell-style quoting supported) |
 | `--timeout` | `250` | poll interval in milliseconds |
+| `--max-wait` | `0` | give up waiting after this duration (e.g. `30s`, `5m`); `0` = unlimited |
 | `-v`, `--verbose` | `false` | verbose (debug-level) output |
 | `--logfile` | _empty_ | path to a log file (JSON format); empty disables file logging |
 
@@ -56,6 +58,7 @@ go-monkill watch --pid=12345 --command="sh -c 'echo done >> /var/log/notify.log'
 | `0` | watched process exited and the user-command succeeded |
 | `1` | invalid input (PID, empty `--command`, parse error, waiter failure) |
 | _N_ | exit code of the user-command if it returned non-zero |
+| `124` | `--max-wait` elapsed before the watched process exited |
 | `130` | interrupted by `SIGINT`/`SIGTERM` before the watched process exited |
 
 ## Install
