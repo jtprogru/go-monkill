@@ -32,7 +32,12 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose (debug-level) output")
-	rootCmd.PersistentFlags().StringVar(&Logfile, "logfile", "", "path to a log file (JSON format); empty disables file logging")
+	rootCmd.PersistentFlags().StringVar(
+		&Logfile,
+		"logfile",
+		"",
+		"path to a log file (JSON format); empty disables file logging",
+	)
 }
 
 // Execute runs the root command.

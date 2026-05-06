@@ -57,7 +57,12 @@ func init() {
 	rootCmd.AddCommand(watchCmd)
 	watchCmd.PersistentFlags().IntVar(&WatcherConfig.pid, "pid", defaultPid, "PID to watch")
 	watchCmd.PersistentFlags().StringVar(&WatcherConfig.command, "command", "", "command to run after the process exits")
-	watchCmd.PersistentFlags().Int64Var(&WatcherConfig.timeout, "timeout", defaultTimeOut, "poll interval in milliseconds")
+	watchCmd.PersistentFlags().Int64Var(
+		&WatcherConfig.timeout,
+		"timeout",
+		defaultTimeOut,
+		"poll interval in milliseconds",
+	)
 }
 
 // Waiter watches a PID and signals when it terminates.
