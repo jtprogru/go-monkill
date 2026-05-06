@@ -79,7 +79,7 @@ func TestCheckPid(t *testing.T) {
 func TestWatcherHappyPath(t *testing.T) {
 	w := &fakeWaiter{fire: true}
 	e := &fakeExecutor{res: executor.Result{ExitCode: 0}}
-	code, err := watcher(context.Background(), 1234, "echo hi", 10, w, e, newTestLogger())
+	code, err := watcher(context.Background(), 1234, "echo hi", 10, 0, w, e, newTestLogger())
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
@@ -97,7 +97,7 @@ func TestWatcherHappyPath(t *testing.T) {
 func TestWatcherPropagatesExitCode(t *testing.T) {
 	w := &fakeWaiter{fire: true}
 	e := &fakeExecutor{res: executor.Result{ExitCode: 42, Err: errors.New("boom")}}
-	code, err := watcher(context.Background(), 1234, "echo hi", 10, w, e, newTestLogger())
+	code, err := watcher(context.Background(), 1234, "echo hi", 10, 0, w, e, newTestLogger())
 	if code != 42 {
 		t.Fatalf("exit code = %d, want 42", code)
 	}
@@ -107,7 +107,7 @@ func TestWatcherPropagatesExitCode(t *testing.T) {
 }
 
 func TestWatcherInvalidPID(t *testing.T) {
-	code, err := watcher(context.Background(), 0, "echo hi", 10, &fakeWaiter{}, &fakeExecutor{}, newTestLogger())
+	code, err := watcher(context.Background(), 0, "echo hi", 10, 0, &fakeWaiter{}, &fakeExecutor{}, newTestLogger())
 	if err == nil {
 		t.Fatal("expected error for invalid PID")
 	}
@@ -119,7 +119,7 @@ func TestWatcherInvalidPID(t *testing.T) {
 func TestWatcherEmptyCommand(t *testing.T) {
 	w := &fakeWaiter{fire: true}
 	e := &fakeExecutor{}
-	code, err := watcher(context.Background(), 1234, "", 10, w, e, newTestLogger())
+	code, err := watcher(context.Background(), 1234, "", 10, 0, w, e, newTestLogger())
 	if err == nil {
 		t.Fatal("expected error for empty command")
 	}
@@ -134,7 +134,7 @@ func TestWatcherEmptyCommand(t *testing.T) {
 func TestWatcherWaiterError(t *testing.T) {
 	w := &fakeWaiter{err: errors.New("waiter exploded")}
 	e := &fakeExecutor{}
-	code, err := watcher(context.Background(), 1234, "echo hi", 10, w, e, newTestLogger())
+	code, err := watcher(context.Background(), 1234, "echo hi", 10, 0, w, e, newTestLogger())
 	if err == nil {
 		t.Fatal("expected waiter error to bubble up")
 	}
@@ -157,7 +157,7 @@ func TestWatcherCancelledContext(t *testing.T) {
 		err  error
 	)
 	go func() {
-		code, err = watcher(ctx, 1234, "echo hi", 10, w, e, newTestLogger())
+		code, err = watcher(ctx, 1234, "echo hi", 10, 0, w, e, newTestLogger())
 		close(done)
 	}()
 
@@ -178,5 +178,35 @@ func TestWatcherCancelledContext(t *testing.T) {
 	}
 	if e.called {
 		t.Fatal("executor must not run when watcher is canceled")
+	}
+}
+
+func TestWatcherMaxWaitTimeout(t *testing.T) {
+	w := &fakeWaiter{block: true}
+	e := &fakeExecutor{}
+	code, err := watcher(context.Background(), 1234, "echo hi", 10, 50*time.Millisecond, w, e, newTestLogger())
+	if code != exitCodeTimeout {
+		t.Fatalf("exit code = %d, want %d", code, exitCodeTimeout)
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected DeadlineExceeded, got %v", err)
+	}
+	if e.called {
+		t.Fatal("executor must not run when max-wait elapses")
+	}
+}
+
+func TestWatcherMaxWaitNotReached(t *testing.T) {
+	w := &fakeWaiter{fire: true}
+	e := &fakeExecutor{res: executor.Result{ExitCode: 0}}
+	code, err := watcher(context.Background(), 1234, "echo hi", 10, time.Hour, w, e, newTestLogger())
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0", code)
+	}
+	if !e.called {
+		t.Fatal("executor should run when max-wait did not expire")
 	}
 }
