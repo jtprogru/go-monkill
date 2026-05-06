@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-06
+
+### Added
+- `run` subcommand: spawn a child process, capture its exit code, and
+  optionally dispatch hooks via `--on-success`, `--on-failure`, `--on-exit`.
+  The utility exits with the child's exit code; hook failures are logged
+  but do not override it.
+- Coverage 94.6% → 95.6%.
+
+### Notes
+- This unblocks the `--on-success` / `--on-failure` semantics that
+  `watch` cannot offer (kernel does not expose exit codes for non-child
+  PIDs). `watch` for monitoring existing PIDs, `run` for orchestrating
+  new ones.
+
 ## [0.7.0] - 2026-05-06
 
 ### Added
@@ -94,7 +109,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Initial release on the new release infrastructure (handcrafted GitHub Actions
 workflow, `softprops/action-gh-release`).
 
-[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/jtprogru/go-monkill/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jtprogru/go-monkill/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jtprogru/go-monkill/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jtprogru/go-monkill/compare/v0.4.0...v0.5.0
