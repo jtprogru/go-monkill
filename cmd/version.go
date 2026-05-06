@@ -4,26 +4,16 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
+
 	"github.com/spf13/cobra"
 )
 
-// versionCmd – show current version of this package
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number of go-monkill",
-	Long:  `All software has versions. This is go-monkill's`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		l := logrus.New()
-		if Verbose {
-			l.SetLevel(logrus.DebugLevel)
-		} else {
-			l.SetLevel(logrus.InfoLevel)
-		}
-		fmt.Printf("%s\nVersion: %s\n", rootCmd.Long, Version)
-		l.Debug("version ", Version, " command 'version' was called")
-
-		return nil
+	Long:  `All software has versions. This is go-monkill's.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("go-monkill %s\ncommit: %s\nbuilt:  %s\n", Version, Commit, BuildDate)
 	},
 }
 

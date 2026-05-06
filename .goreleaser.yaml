@@ -1,0 +1,110 @@
+version: 2
+
+project_name: go-monkill
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: go-monkill
+    main: ./
+    binary: go-monkill
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/jtprogru/go-monkill/cmd.Version={{.Version}}
+      - -X github.com/jtprogru/go-monkill/cmd.Commit={{.Commit}}
+      - -X github.com/jtprogru/go-monkill/cmd.BuildDate={{.Date}}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: default
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    formats:
+      - tar.gz
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+signs:
+  - id: checksums
+    cmd: gpg
+    artifacts: checksum
+    args:
+      - "--batch"
+      - "--pinentry-mode=loopback"
+      - "--passphrase"
+      - "{{ .Env.PASSPHRASE }}"
+      - "--output"
+      - "${signature}"
+      - "--detach-sign"
+      - "${artifact}"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "Merge pull request"
+      - "Merge branch"
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: jtprogru
+    name: go-monkill
+  draft: false
+  prerelease: auto
+  name_template: "v{{ .Version }}"
+
+brews:
+  - name: go-monkill
+    repository:
+      owner: jtprogru
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/jtprogru/go-monkill"
+    description: "Run a command after a process with a given PID terminates"
+    license: "Apache-2.0"
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: "chore(brew): bump {{ .ProjectName }} to {{ .Tag }}"
+    test: |
+      system "#{bin}/go-monkill", "version"
+    install: |
+      bin.install "go-monkill"
