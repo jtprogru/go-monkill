@@ -42,11 +42,35 @@ func TestExec(t *testing.T) {
 	}
 }
 
-// TestExecWithExitCode verifies arbitrary exit-code propagation.
-// Quoted argument support depends on the shell-style parser added in a
-// later commit; once that lands, replace this with: `sh -c 'exit 42'`.
 func TestExecWithExitCode(t *testing.T) {
-	t.Skip("re-enable once command parser supports quoted arguments")
+	e := &Executor{Logger: newTestLogger()}
+	res := e.Exec("sh -c 'exit 42'")
+	if res.ExitCode != 42 {
+		t.Fatalf("expected exit 42, got %d", res.ExitCode)
+	}
+	if res.Err == nil {
+		t.Fatal("expected non-nil err for non-zero exit")
+	}
+}
+
+func TestExecQuotedArgsWithSpaces(t *testing.T) {
+	e := &Executor{Logger: newTestLogger()}
+	// Single-quoted arg with spaces must be passed as one argument to echo.
+	res := e.Exec(`sh -c 'echo "hello world" >/dev/null'`)
+	if res.Err != nil || res.ExitCode != 0 {
+		t.Fatalf("expected success with quoted args, got code=%d err=%v", res.ExitCode, res.Err)
+	}
+}
+
+func TestExecMalformedQuoting(t *testing.T) {
+	e := &Executor{Logger: newTestLogger()}
+	res := e.Exec(`echo "unclosed`)
+	if res.Err == nil {
+		t.Fatal("expected parse error for unclosed quote")
+	}
+	if res.ExitCode != 1 {
+		t.Fatalf("expected exit 1 on parse error, got %d", res.ExitCode)
+	}
 }
 
 func TestExecNilLogger(t *testing.T) {
