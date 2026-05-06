@@ -3,10 +3,11 @@ package executor
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
+	"github.com/google/shlex"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,7 +26,10 @@ type Result struct {
 // streaming stdout/stderr to the parent process. The exit code of the child
 // process is returned in Result.ExitCode.
 func (e *Executor) Exec(command string) Result {
-	cmds := strings.Fields(command)
+	cmds, err := shlex.Split(command)
+	if err != nil {
+		return Result{ExitCode: 1, Err: fmt.Errorf("parse command %q: %w", command, err)}
+	}
 	if len(cmds) == 0 {
 		return Result{ExitCode: 1, Err: errors.New("command not specified")}
 	}
@@ -38,7 +42,7 @@ func (e *Executor) Exec(command string) Result {
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 
-	err := cmd.Run()
+	err = cmd.Run()
 	exitCode := 0
 	if err != nil {
 		var ee *exec.ExitError

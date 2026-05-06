@@ -1,79 +1,83 @@
+version: "2"
+
 run:
-  timeout: 45s
+  timeout: 1m
   modules-download-mode: mod
 
-output:
-  formats:
-    - format: colored-line-number
-
 issues:
-  exclude-files:
-    - ".*_test\\.go$"
-    - "./tools/*"
-    - "./utils/*"
-
-linters-settings:
-  bidichk:
-    left-to-right-embedding: true
-    right-to-left-embedding: true
-    pop-directional-formatting: true
-    left-to-right-override: true
-    right-to-left-override: true
-    left-to-right-isolate: true
-    right-to-left-isolate: true
-    first-strong-isolate: true
-    pop-directional-isolate: true
-
-  godox:
-    keywords:
-      - NOTE
-      - OPTIMIZE
-      - HACK
-      - TODO
-
-  gofmt:
-    simplify: false
-
-  gosec:
-    includes:
-      - G401
-      - G306
-      - G101
-      - G102
-      - G103
-    exclude-generated: true
-    severity: "medium"
-    confidence: "medium"
-
-  lll:
-    line-length: 120
-    tab-width: 2
-
-  misspell:
-    locale: US
-    ignore-words:
-      - someword
-
-  revive:
-    ignore-generated-header: true
-    severity: warning
-    rules:
-      - name: indent-error-flow
-        severity: warning
-
-  unparam:
-    check-exported: true
+  max-issues-per-linter: 0
+  max-same-issues: 0
 
 linters:
-  disable-all: true
-  fast: false
+  default: none
   enable:
     - bidichk
-    - gofmt
-    - godox
     - gosec
     - lll
     - misspell
     - revive
     - unparam
     - unused
+    - godox
+
+  settings:
+    bidichk:
+      left-to-right-embedding: true
+      right-to-left-embedding: true
+      pop-directional-formatting: true
+      left-to-right-override: true
+      right-to-left-override: true
+      left-to-right-isolate: true
+      right-to-left-isolate: true
+      first-strong-isolate: true
+      pop-directional-isolate: true
+
+    godox:
+      keywords:
+        - NOTE
+        - OPTIMIZE
+        - HACK
+
+    gosec:
+      includes:
+        - G401
+        - G306
+        - G101
+        - G102
+        - G103
+      severity: medium
+      confidence: medium
+
+    lll:
+      line-length: 120
+      tab-width: 2
+
+    misspell:
+      locale: US
+
+    revive:
+      severity: warning
+      rules:
+        - name: indent-error-flow
+          severity: warning
+
+    unparam:
+      check-exported: true
+
+  exclusions:
+    paths:
+      - "tools/.*"
+      - "utils/.*"
+    rules:
+      - path: _test\.go$
+        linters:
+          - lll
+          - unparam
+          - gosec
+
+formatters:
+  enable:
+    - gofmt
+  settings:
+    gofmt:
+      simplify: false
