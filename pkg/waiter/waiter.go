@@ -2,6 +2,7 @@
 package waiter
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -15,8 +16,9 @@ type Waiter struct {
 }
 
 // Wait returns a channel that is closed once the process with the given PID
-// is no longer present. It polls every `timeout` milliseconds.
-func (w *Waiter) Wait(pid int, timeout int64) (<-chan struct{}, error) {
+// is no longer present, or once ctx is canceled. It polls every `timeout`
+// milliseconds.
+func (w *Waiter) Wait(ctx context.Context, pid int, timeout int64) (<-chan struct{}, error) {
 	pc, err := ps.FindProcess(pid)
 	if err != nil {
 		return nil, fmt.Errorf("find process %d: %w", pid, err)
@@ -30,19 +32,27 @@ func (w *Waiter) Wait(pid int, timeout int64) (<-chan struct{}, error) {
 	start := time.Now()
 	go func() {
 		defer close(out)
+		ticker := time.NewTicker(time.Duration(timeout) * time.Millisecond)
+		defer ticker.Stop()
 		ticks := 0
 		for {
 			ticks++
 			proc, perr := ps.FindProcess(pid)
-			if perr != nil {
+			switch {
+			case perr != nil:
 				w.debugf("pid=%d poll #%d: error: %v", pid, ticks, perr)
-			} else if proc == nil {
+			case proc == nil:
 				w.infof("pid=%d disappeared after %s (%d polls)", pid, time.Since(start).Round(time.Millisecond), ticks)
 				return
-			} else {
+			default:
 				w.debugf("pid=%d poll #%d: still alive (%s)", pid, ticks, proc.Executable())
 			}
-			time.Sleep(time.Duration(timeout) * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				w.infof("pid=%d watch canceled after %s (%d polls)", pid, time.Since(start).Round(time.Millisecond), ticks)
+				return
+			case <-ticker.C:
+			}
 		}
 	}()
 	return out, nil

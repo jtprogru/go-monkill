@@ -3,14 +3,21 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/jtprogru/go-monkill/pkg/executor"
 	"github.com/jtprogru/go-monkill/pkg/waiter"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+// exitCodeInterrupted is returned when the watcher is canceled before the
+// watched process terminates (matches the conventional 128+SIGINT shell code).
+const exitCodeInterrupted = 130
 
 var watchCmd = &cobra.Command{
 	Use:   "watch",
@@ -28,7 +35,11 @@ go-monkill watch --pid 12345 --command "ping jtprog.ru -c 4"
 		}
 		defer func() { _ = closer.Close() }()
 
+		ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGINT, syscall.SIGTERM)
+		defer stop()
+
 		exitCode, err := watcher(
+			ctx,
 			WatcherConfig.pid,
 			WatcherConfig.command,
 			WatcherConfig.timeout,
@@ -67,7 +78,7 @@ func init() {
 
 // Waiter watches a PID and signals when it terminates.
 type Waiter interface {
-	Wait(pid int, timeout int64) (<-chan struct{}, error)
+	Wait(ctx context.Context, pid int, timeout int64) (<-chan struct{}, error)
 }
 
 // Executor runs an external command and returns its exit status.
@@ -77,7 +88,15 @@ type Executor interface {
 
 // watcher orchestrates a Waiter + Executor and returns the exit code of the
 // executed command (0 when no command ran or it succeeded).
-func watcher(pid int, command string, timeout int64, w Waiter, e Executor, l *logrus.Logger) (int, error) {
+func watcher(
+	ctx context.Context,
+	pid int,
+	command string,
+	timeout int64,
+	w Waiter,
+	e Executor,
+	l *logrus.Logger,
+) (int, error) {
 	l.Debugf("watcher start: pid=%d timeout=%dms command=%q", pid, timeout, command)
 
 	if err := checkPid(pid, l); err != nil {
@@ -87,12 +106,19 @@ func watcher(pid int, command string, timeout int64, w Waiter, e Executor, l *lo
 		return 1, errors.New("--command must not be empty")
 	}
 
-	ch, err := w.Wait(pid, timeout)
+	ch, err := w.Wait(ctx, pid, timeout)
 	if err != nil {
 		l.Errorf("waiter failed: %v", err)
 		return 1, err
 	}
-	<-ch
+
+	select {
+	case <-ch:
+		// proceed to run the command
+	case <-ctx.Done():
+		l.Warnf("interrupted before pid=%d exited; skipping command", pid)
+		return exitCodeInterrupted, ctx.Err()
+	}
 
 	l.Infof("pid=%d finished, running command: %s", pid, command)
 	res := e.Exec(command)

@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jtprogru/go-monkill/pkg/executor"
 	"github.com/sirupsen/logrus"
@@ -12,15 +14,23 @@ import (
 type fakeWaiter struct {
 	err  error
 	fire bool
+	// block: when true, channel never fires unless ctx cancels
+	block bool
 }
 
-func (f *fakeWaiter) Wait(pid int, timeout int64) (<-chan struct{}, error) {
+func (f *fakeWaiter) Wait(ctx context.Context, pid int, timeout int64) (<-chan struct{}, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
 	ch := make(chan struct{})
-	if f.fire {
+	switch {
+	case f.fire:
 		close(ch)
+	case f.block:
+		go func() {
+			<-ctx.Done()
+			close(ch)
+		}()
 	}
 	return ch, nil
 }
@@ -69,7 +79,7 @@ func TestCheckPid(t *testing.T) {
 func TestWatcherHappyPath(t *testing.T) {
 	w := &fakeWaiter{fire: true}
 	e := &fakeExecutor{res: executor.Result{ExitCode: 0}}
-	code, err := watcher(1234, "echo hi", 10, w, e, newTestLogger())
+	code, err := watcher(context.Background(), 1234, "echo hi", 10, w, e, newTestLogger())
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}
@@ -87,7 +97,7 @@ func TestWatcherHappyPath(t *testing.T) {
 func TestWatcherPropagatesExitCode(t *testing.T) {
 	w := &fakeWaiter{fire: true}
 	e := &fakeExecutor{res: executor.Result{ExitCode: 42, Err: errors.New("boom")}}
-	code, err := watcher(1234, "echo hi", 10, w, e, newTestLogger())
+	code, err := watcher(context.Background(), 1234, "echo hi", 10, w, e, newTestLogger())
 	if code != 42 {
 		t.Fatalf("exit code = %d, want 42", code)
 	}
@@ -97,7 +107,7 @@ func TestWatcherPropagatesExitCode(t *testing.T) {
 }
 
 func TestWatcherInvalidPID(t *testing.T) {
-	code, err := watcher(0, "echo hi", 10, &fakeWaiter{}, &fakeExecutor{}, newTestLogger())
+	code, err := watcher(context.Background(), 0, "echo hi", 10, &fakeWaiter{}, &fakeExecutor{}, newTestLogger())
 	if err == nil {
 		t.Fatal("expected error for invalid PID")
 	}
@@ -109,7 +119,7 @@ func TestWatcherInvalidPID(t *testing.T) {
 func TestWatcherEmptyCommand(t *testing.T) {
 	w := &fakeWaiter{fire: true}
 	e := &fakeExecutor{}
-	code, err := watcher(1234, "", 10, w, e, newTestLogger())
+	code, err := watcher(context.Background(), 1234, "", 10, w, e, newTestLogger())
 	if err == nil {
 		t.Fatal("expected error for empty command")
 	}
@@ -124,7 +134,7 @@ func TestWatcherEmptyCommand(t *testing.T) {
 func TestWatcherWaiterError(t *testing.T) {
 	w := &fakeWaiter{err: errors.New("waiter exploded")}
 	e := &fakeExecutor{}
-	code, err := watcher(1234, "echo hi", 10, w, e, newTestLogger())
+	code, err := watcher(context.Background(), 1234, "echo hi", 10, w, e, newTestLogger())
 	if err == nil {
 		t.Fatal("expected waiter error to bubble up")
 	}
@@ -133,5 +143,40 @@ func TestWatcherWaiterError(t *testing.T) {
 	}
 	if e.called {
 		t.Fatal("executor must not run when waiter fails")
+	}
+}
+
+func TestWatcherCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	w := &fakeWaiter{block: true}
+	e := &fakeExecutor{}
+
+	done := make(chan struct{})
+	var (
+		code int
+		err  error
+	)
+	go func() {
+		code, err = watcher(ctx, 1234, "echo hi", 10, w, e, newTestLogger())
+		close(done)
+	}()
+
+	time.Sleep(20 * time.Millisecond)
+	cancel()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("watcher did not return after context cancel")
+	}
+
+	if code != exitCodeInterrupted {
+		t.Fatalf("exit code = %d, want %d", code, exitCodeInterrupted)
+	}
+	if err == nil {
+		t.Fatal("expected ctx.Err to be returned")
+	}
+	if e.called {
+		t.Fatal("executor must not run when watcher is canceled")
 	}
 }
