@@ -10,14 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.1] - 2026-05-06
 
 ### Changed
-- Windows is **explicitly** declared unsupported. `main.go` now carries a
-  `//go:build linux || darwin` constraint, so `GOOS=windows go build`
-  fails with `build constraints exclude all Go files` instead of
-  pretending to produce a binary that has never worked anyway.
-- README documents the policy in the lead.
+- Build constraint `//go:build linux || darwin` added to `main.go`,
+  formalising the supported-platform set already enforced by the CI and
+  release matrix.
+- README documents the supported-platform policy in the lead.
 
-This is a documentation/build-policy change only; no functional changes
-to the CLI surface or behaviour.
+Documentation/build-policy change only; no functional changes to the CLI
+surface or behaviour.
 
 ## [1.0.0] - 2026-05-06
 
