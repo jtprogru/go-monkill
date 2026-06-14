@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-06-14
+
+### Changed
+- Dependencies updated to latest: `spf13/cobra` v1.8.1 → v1.10.2, `golang.org/x/sys` v0.30.0 → v0.46.0.
+- Go baseline bumped to 1.26 (`go.mod` directive and CI `go-version`); the latest `golang.org/x/sys` requires Go 1.25+.
+- CI actions bumped to Node 24-compatible major versions: `actions/checkout` v5, `actions/setup-go` v6, `actions/upload-artifact` v5, `golangci/golangci-lint-action` v9 (golangci-lint v2.12.2), `goreleaser/goreleaser-action` v7, `crazy-max/ghaction-import-gpg` v7.
+
+Maintenance release only; no functional changes to the CLI surface or behaviour.
+
 ## [1.0.1] - 2026-05-06
 
 ### Changed
@@ -145,7 +154,8 @@ after v1.0.0 ships.
 Initial release on the new release infrastructure (handcrafted GitHub Actions
 workflow, `softprops/action-gh-release`).
 
-[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/jtprogru/go-monkill/compare/v1.0.2...v1.0.3
 [1.0.1]: https://github.com/jtprogru/go-monkill/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jtprogru/go-monkill/compare/v0.8.0...v1.0.0
 [0.8.0]: https://github.com/jtprogru/go-monkill/compare/v0.7.0...v0.8.0
