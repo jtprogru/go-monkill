@@ -1,0 +1,90 @@
+version: "3"
+
+vars:
+  BINARY_DIR: dist
+  BINARY_NAME: go-monkill
+  COVER_FILE: cover.out
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  install-deps:
+    desc: Tidy module dependencies
+    cmds:
+      - go mod tidy
+
+  fmt:
+    desc: Format Go sources with gofmt -s -w
+    cmds:
+      - gofmt -s -w .
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run -v ./...
+
+  test:
+    desc: Run unit tests with coverage
+    cmds:
+      - go test -race -short -coverprofile={{.COVER_FILE}} ./...
+      - task: test:coverage
+
+  test:coverage:
+    desc: Show test coverage summary
+    cmds:
+      - go tool cover -func={{.COVER_FILE}}
+    sources:
+      - "{{.COVER_FILE}}"
+
+  build:
+    desc: Build a local binary into ./{{.BINARY_DIR}}
+    cmds:
+      - CGO_ENABLED=0 go build -trimpath -o ./{{.BINARY_DIR}}/{{.BINARY_NAME}} .
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+    generates:
+      - "./{{.BINARY_DIR}}/{{.BINARY_NAME}}"
+
+  run:
+    desc: Run via `go run`
+    cmds:
+      - go run . {{.CLI_ARGS}}
+
+  run:bin:
+    desc: Build and run the local binary
+    deps: [build]
+    cmds:
+      - "./{{.BINARY_DIR}}/{{.BINARY_NAME}} {{.CLI_ARGS}}"
+
+  release:snapshot:
+    desc: Run goreleaser in snapshot mode (no publish, no signing)
+    cmds:
+      - goreleaser release --snapshot --clean --skip=sign,publish
+
+  changelog:
+    desc: Regenerate CHANGELOG.md from git history (requires git-cliff)
+    cmds:
+      - git-cliff --output CHANGELOG.md
+    preconditions:
+      - sh: command -v git-cliff
+        msg: "git-cliff is required (brew install git-cliff)"
+
+  clean:
+    desc: Remove build artifacts and coverage files
+    cmds:
+      - rm -rf {{.BINARY_DIR}} {{.COVER_FILE}}
+
+  ci:
+    desc: Aggregate target used by CI (vet + lint + test)
+    deps: [vet, lint, test]

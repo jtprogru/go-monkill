@@ -1,3 +1,5 @@
+name: GolangCI-lint
+
 on:
   push:
     paths:
@@ -14,39 +16,23 @@ on:
       - ".github/workflows/golangci-lint.yml"
       - ".golangci.yml"
 
-name: GolangCI-lint
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
   golangci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+      - uses: actions/checkout@v6
 
-      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v9
         with:
-          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
-          version: latest
-
-          # Optional: working directory, useful for monorepos
-          # working-directory: somedir
-
-          # Optional: golangci-lint command line arguments.
+          version: v2.12.2
           args: --verbose
-
-          # Optional: show only new issues if it's a pull request. The default value is `false`.
-          # only-new-issues: true
-
-          # Optional: if set to true then the all caching functionality will be complete disabled,
-          #           takes precedence over all other caching options.
-          # skip-cache: true
-
-          # Optional: if set to true then the action don't cache or restore ~/go/pkg.
-          # skip-pkg-cache: true
-
-          # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
-          # skip-build-cache: true
