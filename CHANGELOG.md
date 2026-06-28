@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- `watch` now pins each PID to its owner's start time (`/proc/<pid>/stat` on Linux, the `kern.proc.pid` sysctl on macOS) instead of tracking the bare numeric PID. If the kernel recycles a watched PID for an unrelated process, the start time changes and the original process is treated as exited, so the command no longer fires against an impostor.
+- The `--logfile` is now opened with `O_NOFOLLOW`, so a symlink at the final path component makes the open fail instead of being followed. This blocks a symlink-swap attack from redirecting log appends into an arbitrary file when the utility runs with elevated privileges.
+- README gains a Security section documenting the threat model: no implicit shell interpretation (commands run via `exec`, not `/bin/sh -c`), command strings being logged in cleartext (don't pass secrets inline), the `O_NOFOLLOW` logfile behaviour, and hooks inheriting the caller's privileges.
+
+### Changed
+- `golang.org/x/sys` moved from an indirect to a direct dependency (used for the macOS `sysctl` start-time lookup).
+
 ## [1.0.3] - 2026-06-14
 
 ### Changed

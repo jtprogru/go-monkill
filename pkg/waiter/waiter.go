@@ -3,12 +3,17 @@ package waiter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/mitchellh/go-ps"
 	"github.com/sirupsen/logrus"
 )
+
+// errProcessGone is returned by processStartTime (see waiter_linux.go /
+// waiter_darwin.go) when the PID no longer maps to a live process.
+var errProcessGone = errors.New("process no longer exists")
 
 // Waiter polls the OS process table for a given PID.
 type Waiter struct {
@@ -26,7 +31,17 @@ func (w *Waiter) Wait(ctx context.Context, pid int, timeout int64) (<-chan struc
 	if pc == nil {
 		return nil, fmt.Errorf("process with PID %d not found", pid)
 	}
-	w.debugf("watching pid=%d (%s) every %dms", pid, pc.Executable(), timeout)
+
+	// Capture the process start time so we can detect PID reuse: a PID is only
+	// unique together with the moment its current owner started. If the watched
+	// process exits and the kernel hands the same numeric PID to an unrelated
+	// process, the start time changes and we treat the original as terminated
+	// instead of latching onto the impostor.
+	origStart, err := processStartTime(pid)
+	if err != nil {
+		return nil, fmt.Errorf("read start time for pid %d: %w", pid, err)
+	}
+	w.debugf("watching pid=%d (%s) start=%d every %dms", pid, pc.Executable(), origStart, timeout)
 
 	out := make(chan struct{})
 	start := time.Now()
@@ -37,15 +52,19 @@ func (w *Waiter) Wait(ctx context.Context, pid int, timeout int64) (<-chan struc
 		ticks := 0
 		for {
 			ticks++
-			proc, perr := ps.FindProcess(pid)
+			curStart, perr := processStartTime(pid)
 			switch {
-			case perr != nil:
-				w.debugf("pid=%d poll #%d: error: %v", pid, ticks, perr)
-			case proc == nil:
+			case errors.Is(perr, errProcessGone):
 				w.infof("pid=%d disappeared after %s (%d polls)", pid, time.Since(start).Round(time.Millisecond), ticks)
 				return
+			case perr != nil:
+				w.debugf("pid=%d poll #%d: error: %v", pid, ticks, perr)
+			case curStart != origStart:
+				w.infof("pid=%d reused by a different process after %s (%d polls); treating original as exited",
+					pid, time.Since(start).Round(time.Millisecond), ticks)
+				return
 			default:
-				w.debugf("pid=%d poll #%d: still alive (%s)", pid, ticks, proc.Executable())
+				w.debugf("pid=%d poll #%d: still alive", pid, ticks)
 			}
 			select {
 			case <-ctx.Done():

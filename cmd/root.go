@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"syscall"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -62,7 +63,11 @@ func newLogger() (*logrus.Logger, io.Closer, error) {
 		return l, io.NopCloser(nil), nil
 	}
 
-	f, err := os.OpenFile(Logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	// O_NOFOLLOW refuses to open the final path component if it is a symlink,
+	// preventing a symlink-swap attack from redirecting our appends into an
+	// arbitrary file when the utility runs with elevated privileges and the
+	// logfile lives in a directory writable by others.
+	f, err := os.OpenFile(Logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY|syscall.O_NOFOLLOW, 0o644)
 	if err != nil {
 		return nil, nil, fmt.Errorf("open logfile %q: %w", Logfile, err)
 	}

@@ -23,7 +23,7 @@ Very simple utility that allows you to run the desired command or script as soon
 
 ## Features
 
-- `watch` — observe one or more existing PIDs and run a command after they exit.
+- `watch` — observe one or more existing PIDs and run a command after they exit. PID reuse is handled: each PID is pinned to its owner's start time (`/proc/<pid>/stat` on Linux, `kern.proc.pid` sysctl on macOS), so the command does **not** fire if the kernel recycles the numeric PID for an unrelated process.
 - `run` — spawn a child process and dispatch hooks (`--on-success` / `--on-failure` / `--on-exit`) based on its exit code.
 - Multi-PID with `--wait-for all|any` — wait for every PID to terminate, or just the first one.
 - Optional overall watch deadline via `--max-wait` (e.g. `30s`, `5m`).
@@ -97,6 +97,15 @@ Hook failures are logged but do **not** override the child's exit code.
 | _N_ | exit code of the user-command if it returned non-zero |
 | `124` | `--max-wait` elapsed before the watched process exited |
 | `130` | interrupted by `SIGINT`/`SIGTERM` before the watched process exited |
+
+## Security
+
+`go-monkill` runs arbitrary commands on your behalf, so keep these properties in mind:
+
+- **No shell interpretation.** Commands (`--command`, `--on-success`, `--on-failure`, `--on-exit`) and the `run` child are parsed with [shlex](https://github.com/google/shlex) and executed directly via `exec` — there is no implicit `/bin/sh -c`. Shell metacharacters (`&&`, `;`, `|`, `$()`, backticks) are passed as literal arguments, not interpreted, which removes the classic shell-injection vector. If you genuinely need shell features, invoke a shell explicitly, e.g. `--command "sh -c 'a && b'"`.
+- **Command strings are logged in cleartext.** The full command (including its arguments) is written to stderr at info level and, when `--logfile` is set, to the JSON log file. Do **not** pass secrets inline (tokens, passwords, `Authorization:` headers); reference them via environment variables or files the invoked command reads itself.
+- **Logfile is opened with `O_NOFOLLOW`.** If the final path component of `--logfile` is a symlink, the open fails instead of following it. This blocks a symlink-swap attack from redirecting log appends into an arbitrary file when the utility runs with elevated privileges. Still prefer a logfile in a directory writable only by the owner.
+- **Hooks inherit the parent's privileges and environment.** A command run by `go-monkill` has exactly the rights of the user running `go-monkill`. Watching another user's PID does not grant any access to it — only its presence in the process table is observed.
 
 ## Install
 

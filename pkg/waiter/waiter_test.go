@@ -2,6 +2,7 @@ package waiter
 
 import (
 	"context"
+	"errors"
 	"os/exec"
 	"strings"
 	"testing"
@@ -71,6 +72,44 @@ func TestWaitContextCancel(t *testing.T) {
 	case <-ch:
 	case <-time.After(time.Second):
 		t.Fatal("Wait did not return after context cancel")
+	}
+}
+
+func TestProcessStartTimeStableThenGone(t *testing.T) {
+	cmd := exec.Command("sleep", "5")
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start sleep: %v", err)
+	}
+	pid := cmd.Process.Pid
+
+	first, err := processStartTime(pid)
+	if err != nil {
+		t.Fatalf("processStartTime (first): %v", err)
+	}
+	second, err := processStartTime(pid)
+	if err != nil {
+		t.Fatalf("processStartTime (second): %v", err)
+	}
+	if first != second {
+		t.Fatalf("start time not stable for a live process: %d != %d", first, second)
+	}
+
+	if err := cmd.Process.Kill(); err != nil {
+		t.Fatalf("kill: %v", err)
+	}
+	_ = cmd.Wait() // reap so the PID leaves the process table
+
+	// Poll briefly: the kernel may take a moment to drop the entry.
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		_, err = processStartTime(pid)
+		if errors.Is(err, errProcessGone) {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("expected errProcessGone after kill, got %v", err)
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 }
 
