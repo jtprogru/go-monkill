@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README gains a Security section documenting the threat model: no implicit shell interpretation (commands run via `exec`, not `/bin/sh -c`), command strings being logged in cleartext (don't pass secrets inline), the `O_NOFOLLOW` logfile behaviour, and hooks inheriting the caller's privileges.
 
 ### Changed
-- `golang.org/x/sys` moved from an indirect to a direct dependency (used for the macOS `sysctl` start-time lookup).
+- `golang.org/x/sys` moved from an indirect to a direct dependency (used for the macOS `sysctl` start-time lookup), and bumped v0.46.0 → v0.47.0 (#30).
+- CI `actions/checkout` bumped v6 → v7 (#29).
 
 ## [1.0.3] - 2026-06-14
 
