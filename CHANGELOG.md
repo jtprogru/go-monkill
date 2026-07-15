@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-15
+
 ### Security
 - `watch` now pins each PID to its owner's start time (`/proc/<pid>/stat` on Linux, the `kern.proc.pid` sysctl on macOS) instead of tracking the bare numeric PID. If the kernel recycles a watched PID for an unrelated process, the start time changes and the original process is treated as exited, so the command no longer fires against an impostor.
 - The `--logfile` is now opened with `O_NOFOLLOW`, so a symlink at the final path component makes the open fail instead of being followed. This blocks a symlink-swap attack from redirecting log appends into an arbitrary file when the utility runs with elevated privileges.
@@ -163,7 +165,8 @@ after v1.0.0 ships.
 Initial release on the new release infrastructure (handcrafted GitHub Actions
 workflow, `softprops/action-gh-release`).
 
-[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/jtprogru/go-monkill/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/jtprogru/go-monkill/compare/v1.0.3...v1.1.0
 [1.0.3]: https://github.com/jtprogru/go-monkill/compare/v1.0.2...v1.0.3
 [1.0.1]: https://github.com/jtprogru/go-monkill/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jtprogru/go-monkill/compare/v0.8.0...v1.0.0
