@@ -115,9 +115,7 @@ homebrew_casks:
     commit_msg_template: "chore(cask): bump {{ .ProjectName }} to {{ .Tag }}"
     # Strip macOS quarantine xattr from the unsigned binary so Gatekeeper
     # doesn't refuse to run it after `brew install --cask`.
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/go-monkill"]
-          end
+    custom_block: |
+      postflight_steps do
+        run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ "{{staged_path}}" }}/go-monkill"]
+      end
