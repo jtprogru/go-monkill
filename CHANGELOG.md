@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Homebrew cask: the quarantine `postflight_steps` now comes from `hooks.post.install_steps` instead of `custom_block`. goreleaser 2.19 renders `custom_block` at the top of the cask, where `brew style` rejects it with `Cask/StanzaOrder`.
+
 ## [1.1.0] - 2026-07-15
 
 ### Security
